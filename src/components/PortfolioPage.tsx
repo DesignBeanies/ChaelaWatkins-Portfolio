@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Lens model
@@ -984,7 +986,7 @@ export default function Home() {
   // "drawer" on top of the new view during the wipe.
   const [prevLens, setPrevLens] = useState<Lens | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const heroRef = useRef<HTMLElement>(null);
   // Viewport Y (px) for the top of the fixed curtain drawer, captured at
   // the moment the user picks a lens. First pick from the landing page may
@@ -1149,7 +1151,7 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
       </div>
 
       <div className="relative z-10 mx-auto max-w-[1280px] px-6 pt-[53px] max-md:pb-[250px] md:px-20 md:pb-24 md:pt-28">
-        <div className="w-2/3 min-w-0 max-w-full text-ink">
+        <div className="min-w-0 max-w-full w-2/3 max-[499px]:w-full text-ink">
           <p className="text-[24px] leading-tight text-ink md:text-[36px]">
             I&rsquo;m Chaela Watkins a
           </p>
@@ -1572,7 +1574,7 @@ function FitSection({ lens }: { lens: Lens }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
   const [pillsExpanded, setPillsExpanded] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pillExpandEase = EASE_OUT_CUBIC;
   const pillExpandDuration = prefersReducedMotion ? 0 : 0.2;
 
@@ -1666,9 +1668,6 @@ function FitSection({ lens }: { lens: Lens }) {
   const skillPillBase = isDesignerFit
     ? "border-2 border-ink px-2.5 py-2.5 text-[20px] max-md:font-normal md:px-3 md:py-1.5 md:text-[14px] md:font-medium"
     : "border-2 border-ink px-3 py-1.5 text-[14px] font-medium";
-  const morePillSizerPad = isDesignerFit
-    ? "px-2.5 py-2.5 md:px-3 md:py-1.5"
-    : "px-3 py-1.5";
 
   return (
     <section className={LENSES[lens].fitBg}>
@@ -1778,6 +1777,7 @@ function FitSection({ lens }: { lens: Lens }) {
             {hasMorePills && (
               <motion.button
                 type="button"
+                layout
                 onClick={() => setPillsExpanded((e) => !e)}
                 aria-expanded={pillsExpanded}
                 aria-label={
@@ -1785,16 +1785,10 @@ function FitSection({ lens }: { lens: Lens }) {
                     ? "Show fewer skills"
                     : `Show ${morePillCount} additional skills`
                 }
-                className={`relative inline-flex box-border shrink-0 border-2 border-transparent text-hwite transition-[filter,transform] hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 ${
-                  isDesignerFit
-                    ? "text-[20px] max-md:font-normal md:text-[14px] md:font-medium"
-                    : "text-[14px] font-medium"
-                } ${ACCENTS[lens].divider}`}
+                className={`${skillPillBase} relative inline-flex items-center justify-center box-border shrink-0 transition-colors bg-transparent text-ink hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2`}
               >
-                <span
-                  className={`invisible block ${morePillSizerPad}`}
-                  aria-hidden
-                >
+                {/* Wider of "Show less" / "+N" — no inner padding (outer skillPillBase already pads) */}
+                <span className="invisible block" aria-hidden>
                   <span className="inline-grid [grid-template-columns:minmax(0,max-content)] [grid-template-rows:1fr]">
                     <span className="col-start-1 row-start-1 whitespace-nowrap">
                       Show less
@@ -1804,9 +1798,7 @@ function FitSection({ lens }: { lens: Lens }) {
                     </span>
                   </span>
                 </span>
-                <span
-                  className={`absolute inset-0 flex items-center justify-center ${morePillSizerPad}`}
-                >
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <AnimatePresence initial={false} mode="popLayout">
                     <motion.span
                       key={pillsExpanded ? "less" : "more"}
@@ -1910,7 +1902,7 @@ function FitSection({ lens }: { lens: Lens }) {
 
 function ProjectSection({ project }: { project: Project }) {
   const [expanded, setExpanded] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const hasMore = project.moreSkills.length > 0;
 
   // Keep motion snappy but not jumpy. Each extra pill eases in with a tiny
@@ -2069,7 +2061,7 @@ function ProjectSection({ project }: { project: Project }) {
 
 function DesignerProjectSection({ project }: { project: DesignerProject }) {
   const [expanded, setExpanded] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const hasMore = project.moreSkills.length > 0;
   const accent = ACCENTS.designer;
 
