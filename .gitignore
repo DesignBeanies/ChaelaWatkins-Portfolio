@@ -18,7 +18,16 @@
 
 # misc
 .DS_Store
+**/.DS_Store
 *.pem
+
+# Local scratch at repo root (screenshots & one-off scripts), not part of the app
+/case-*.png
+/fit-*.png
+/jane-*.png
+/.probe-jane.mjs
+/.rasterize.mjs
+/.screenshot*.mjs
 
 # debug
 npm-debug.log*
