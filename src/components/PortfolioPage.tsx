@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { publicPath } from "@/lib/publicPath";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Lens model
@@ -34,7 +35,7 @@ const LENSES: Record<Lens, LensMeta> = {
     bg: "#ffb5b6",
     fitBg: "bg-millennial",
     character: {
-      src: "/recruiter.svg",
+      src: publicPath("/recruiter.svg"),
       width: 247,
       height: 226,
       alt: "Retro phone character",
@@ -46,7 +47,7 @@ const LENSES: Record<Lens, LensMeta> = {
     bg: "#a9dac9",
     fitBg: "bg-tear",
     character: {
-      src: "/designer.svg",
+      src: publicPath("/designer.svg"),
       width: 188,
       height: 213,
       alt: "Retro soda-can character",
@@ -58,7 +59,7 @@ const LENSES: Record<Lens, LensMeta> = {
     bg: "rgba(254, 190, 20, 0.55)",
     fitBg: "bg-goldenhour/60",
     character: {
-      src: "/jane-doe.svg",
+      src: publicPath("/jane-doe.svg"),
       width: 166,
       height: 199,
       alt: "Retro ghost character",
@@ -705,9 +706,9 @@ const PROJECTS: Project[] = [
     solution:
       "The design solution centered on location-specific splash pages that let each store maintain its identity and stay OEM-compliant while living under the Team Mancuso umbrella. Consolidated five years of fragmented branding into a unified front: improving brand recognition across all touchpoints and giving the business one system to maintain instead of five.",
     images: {
-      hero: "/projects/tmp-hero.png",
-      before: "/projects/tmp-before.png",
-      after: "/projects/tmp-after.png",
+      hero: publicPath("/projects/tmp-hero.png"),
+      before: publicPath("/projects/tmp-before.png"),
+      after: publicPath("/projects/tmp-after.png"),
     },
   },
   {
@@ -740,9 +741,9 @@ const PROJECTS: Project[] = [
     solution:
       "Usability testing on the most complex parts of the flow surfaced the final interaction refinements. The result was a fully in-house, on-brand credit application — analytics-enabled, ADA compliant, and half the steps of the original.",
     images: {
-      hero: "/projects/sca-hero.png",
-      before: "/projects/sca-before.png",
-      after: "/projects/sca-after.png",
+      hero: publicPath("/projects/sca-hero.png"),
+      before: publicPath("/projects/sca-before.png"),
+      after: publicPath("/projects/sca-after.png"),
     },
   },
   {
@@ -775,9 +776,9 @@ const PROJECTS: Project[] = [
     solution:
       "A modular, multimedia-rich site that unified every channel behind a single brand — built end-to-end solo, from discovery through launch. The shop, podcast, and newsletter live together as equal citizens, and the design scales as new offers get added.",
     images: {
-      hero: "/projects/cdo-hero.png",
-      before: "/projects/cdo-before.png",
-      after: "/projects/cdo-after.png",
+      hero: publicPath("/projects/cdo-hero.png"),
+      before: publicPath("/projects/cdo-before.png"),
+      after: publicPath("/projects/cdo-after.png"),
     },
   },
 ];
@@ -846,23 +847,23 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       {
         title: "Understanding the context",
         body: "When there’s no brand system to work within you build the guardrails first. I started with competitive/comparative research of other multi-media projects, original site content audit, and stakeholder workshops to align on content and hierarchy before any visual decision got made. Getting a client to react to structure, flows, and solutions before aesthetics is how I avoid redesigning everything in hifis.",
-        illustration: "/projects/designer/cdo-understanding.svg",
+        illustration: publicPath("/projects/designer/cdo-understanding.svg"),
       },
       {
         title: "Improving the design & story",
         body: "I pulled the color palette directly from the main art piece. The easy choice would have been to keep the earthy, western tones of the original website, instead we went darker and moodier to visually communicate the psychological depth and mystery at the heart of the story.",
-        illustration: "/projects/designer/cdo-improving.svg",
+        illustration: publicPath("/projects/designer/cdo-improving.svg"),
       },
       {
         title: "Building the vibes",
         body: "CMS has restrictions on layouts that don’t always match what a visually ambitious client imagines, or myself for that matter. Every creative decision had a technical conversation underneath it: what’s possible, what’s solvable through custom CSS, what’s a trade-off between the vision and what holds up across devices.",
-        illustration: "/projects/designer/cdo-vibes.svg",
+        illustration: publicPath("/projects/designer/cdo-vibes.svg"),
       },
     ],
     images: {
-      hero: "/projects/cdo-hero.png",
-      before: "/projects/cdo-before.png",
-      after: "/projects/cdo-after.png",
+      hero: publicPath("/projects/cdo-hero.png"),
+      before: publicPath("/projects/cdo-before.png"),
+      after: publicPath("/projects/cdo-after.png"),
     },
   },
   {
@@ -896,23 +897,23 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       {
         title: "Understanding the context",
         body: "We went on-site before designing because you can’t design for five distinct stores without knowing what makes each of them unique. Card sorts, customer sentiment, competitive/comparative analyses were conducted to get an even deeper understanding of the powersports industry and user type.",
-        illustration: "/projects/designer/tmp-understanding.svg",
+        illustration: publicPath("/projects/designer/tmp-understanding.svg"),
       },
       {
         title: "During the process",
         body: "Constant collaboration, workshops, and feedback loops with ops and dev team kept us on track while uncovering nuances, store needs/wants, and technical constraints. This is what helped us uncover the major compliance red flag among other risks, pain points, and trade-offs.",
-        illustration: "/projects/designer/tmp-process.svg",
+        illustration: publicPath("/projects/designer/tmp-process.svg"),
       },
       {
         title: "How we got a compliant site",
         body: "If we kept the original sites’ URL that redirected to store splash pages containing OEM promos, approved brands, and the correct items “above the fold,” we could make the business request work within the OEM guidelines. Not the most obvious solution — but collaboration allows for the best solutions to grow.",
-        illustration: "/projects/designer/tmp-compliant.svg",
+        illustration: publicPath("/projects/designer/tmp-compliant.svg"),
       },
     ],
     images: {
-      hero: "/projects/tmp-hero.png",
-      before: "/projects/tmp-before.png",
-      after: "/projects/tmp-after.png",
+      hero: publicPath("/projects/tmp-hero.png"),
+      before: publicPath("/projects/tmp-before.png"),
+      after: publicPath("/projects/tmp-after.png"),
     },
   },
   {
@@ -943,23 +944,23 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       {
         title: "Ramp up",
         body: "New to the team, I rapidly navigated a steep learning curve: mastering industry jargon, design systems, and team processes. By proactively asking questions and leaning on team expertise, I quickly built the context needed to make effective decisions.",
-        illustration: "/projects/designer/srp-rampup.svg",
+        illustration: publicPath("/projects/designer/srp-rampup.svg"),
       },
       {
         title: "Optimizing content & hierarchy",
         body: "User research showed the car tile had enough information for decision-making, but was missing a critical detail: location. A major issue for a nationwide business with real shipping logistics. Instead of adding more content, we simplified — removing “quick info” and prioritizing clarity. A consistent F-pattern layout improved scannability across listings.",
-        illustration: "/projects/designer/srp-rampup.svg",
+        illustration: publicPath("/projects/designer/srp-rampup.svg"),
       },
       {
         title: "A push forward",
         body: "A/B testing showed the new SRP outperformed the old across 90% of KPIs, but a drop in “Ask about this car” interactions paused rollout. We found the CTA on the car tile had been used as a workaround for missing location info. Once we solved that, the need disappeared. What looked like a loss proved the design worked — enabling full launch.",
-        illustration: "/projects/designer/srp-pushforward.svg",
+        illustration: publicPath("/projects/designer/srp-pushforward.svg"),
       },
     ],
     images: {
-      hero: "/projects/srp-hero.png",
-      before: "/projects/srp-before.png",
-      after: "/projects/srp-after.png",
+      hero: publicPath("/projects/srp-hero.png"),
+      before: publicPath("/projects/srp-before.png"),
+      after: publicPath("/projects/srp-after.png"),
     },
   },
 ];
@@ -1142,7 +1143,7 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/mobile-hero-rainbow.svg"
+          src={publicPath("/mobile-hero-rainbow.svg")}
           alt=""
           aria-hidden
           draggable={false}
@@ -1167,7 +1168,7 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
 
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/rainbow-hero.svg"
+        src={publicPath("/rainbow-hero.svg")}
         alt=""
         aria-hidden
         draggable={false}
@@ -1552,7 +1553,7 @@ function ContactFooter({ lens }: { lens: Lens }) {
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/footer.svg"
+        src={publicPath("/footer.svg")}
         alt=""
         aria-hidden
         className="block w-full select-none"
@@ -2306,26 +2307,38 @@ const JANE_PRINCIPLES: JanePrinciple[] = [
   {
     title: "I understand before I do anything",
     body: "I go upstream before I go to Figma. Most design problems aren’t design problems. They’re communication problems, operations problems, or someone asking for the wrong thing because they couldn’t articulate the right thing yet. I’d rather spend a week understanding the real problem than a month designing the wrong solution.",
-    icon: "/icons/fi-ss-bulb.svg",
-    image: { src: "/projects/cdo-hero.png", alt: "Cazador del Oso site" },
+    icon: publicPath("/icons/fi-ss-bulb.svg"),
+    image: {
+      src: publicPath("/projects/cdo-hero.png"),
+      alt: "Cazador del Oso site",
+    },
   },
   {
     title: "The story has to land before anything else does",
     body: "If someone doesn’t understand what they’re looking at or why it matters, no amount of good design will get them to act. But the reverse is just as true: great content shown poorly, cheaply, or in a way that feels spammy will lose people just as fast. That’s why I collaborate closely with content designers and have invested in developing my own content skills. The words and the design have to work together to tell the story or neither one works.",
-    icon: "/icons/fi-ss-rocket.svg",
-    image: { src: "/projects/tmp-hero.png", alt: "Team Mancuso Powersports site" },
+    icon: publicPath("/icons/fi-ss-rocket.svg"),
+    image: {
+      src: publicPath("/projects/tmp-hero.png"),
+      alt: "Team Mancuso Powersports site",
+    },
   },
   {
     title: "Some of the best ideas don’t start on the screen",
     body: "There’s something that happens when you slow down and step away from technology. Taking a hike outside, sketching or writing on paper, a conversation over coffee. Inspiration doesn’t always come from staring at a monitor, and in a world where AI can generate anything in seconds, the most interesting ideas still tend to come from being a human first.",
-    icon: "/icons/fi-ss-tree.svg",
-    image: { src: "/projects/srp-hero.png", alt: "SRP tile redesign" },
+    icon: publicPath("/icons/fi-ss-tree.svg"),
+    image: {
+      src: publicPath("/projects/srp-hero.png"),
+      alt: "SRP tile redesign",
+    },
   },
   {
     title: "Good design lives at the intersection of three things",
     body: "Empathy, creativity, and passion. Pull any one of them out and something breaks. You might solve the right problem unimaginatively, or pour creative energy into something that misses what people actually need, or execute well on something nobody cared enough about to get right. When all three are in the room, it shows.",
-    icon: "/icons/fi-ss-chart-set-theory.svg",
-    image: { src: "/projects/sca-hero.png", alt: "EchoPark credit application" },
+    icon: publicPath("/icons/fi-ss-chart-set-theory.svg"),
+    image: {
+      src: publicPath("/projects/sca-hero.png"),
+      alt: "EchoPark credit application",
+    },
   },
 ];
 
@@ -2396,7 +2409,7 @@ function EspressoBreakSection() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/jane/coffee-break/espresso-illustration.svg"
+              src={publicPath("/jane/coffee-break/espresso-illustration.svg")}
               alt=""
               className="block h-full w-full object-contain"
               draggable={false}

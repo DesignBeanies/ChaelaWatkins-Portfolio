@@ -1,20 +1,18 @@
 /** @type {import('next').NextConfig} */
+const basePath = "/ChaelaWatkins-Portfolio";
+
 const nextConfig = {
+  output: "export",
+  basePath,
+  trailingSlash: true,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: basePath,
+  },
   // Smaller client bundles for barrel-heavy packages (no UI change).
   experimental: {
     optimizePackageImports: ["framer-motion"],
   },
-  // Minor hardening; no change to page output.
   poweredByHeader: false,
-  async redirects() {
-    return [
-      {
-        source: "/espresso",
-        destination: "/",
-        permanent: false,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
