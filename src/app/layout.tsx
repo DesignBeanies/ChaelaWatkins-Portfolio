@@ -13,10 +13,39 @@ const afacad = Afacad({
 });
 
 // Tab title + favicon: `title` below; favicon is `app/icon.svg` (Next.js file convention).
+// `metadataBase` makes `og:image` and similar URLs absolute for link previews (Slack, iMessage, LinkedIn).
+// Must match the public site origin including GitHub Pages base path.
+const siteUrl = "https://designbeanies.github.io/ChaelaWatkins-Portfolio";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Design Beanies",
   description:
     "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+  openGraph: {
+    title: "Design Beanies",
+    description:
+      "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+    url: siteUrl,
+    siteName: "Design Beanies",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Chaela Watkins — UX & Product Designer",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Design Beanies",
+    description:
+      "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({
