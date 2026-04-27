@@ -25,7 +25,7 @@ export default function Error({
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-2 border-2 border-ink bg-ink px-4 py-2 text-hwite"
+        className="mt-2 border-2 border-ink bg-ink px-4 py-2 text-hwite outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
       >
         Try again
       </button>

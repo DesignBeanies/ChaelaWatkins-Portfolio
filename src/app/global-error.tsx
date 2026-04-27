@@ -50,7 +50,9 @@ export default function GlobalError({
                   color: "inherit",
                   font: "inherit",
                   padding: 0,
+                  outline: "none",
                 }}
+                className="rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 reload
               </button>

@@ -1252,7 +1252,7 @@ function WhoAreYouSection({
                 "m-0 appearance-none border-0 bg-transparent p-0 font-sans",
                 "group relative flex w-[263px] max-w-[80vw] shrink-0 snap-center flex-col items-stretch text-left text-ink transition-transform duration-200",
                 "outline-none",
-                "focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ink",
+                "focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite",
                 "md:max-w-[263px]",
                 disabled
                   ? "cursor-not-allowed opacity-80"
@@ -1302,8 +1302,8 @@ function WhoAreYouSection({
               onClick={() => goToSlide(i)}
               className={
                 i === activeSlide
-                  ? "h-2.5 w-2.5 rounded-full border-2 border-ink bg-ink p-0 transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 active:scale-90 disabled:opacity-50"
-                  : "h-2.5 w-2.5 rounded-full border-2 border-ink bg-hwite p-0 transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 active:scale-90 disabled:opacity-50"
+                  ? "h-2.5 w-2.5 rounded-full border-2 border-ink bg-ink p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
+                  : "h-2.5 w-2.5 rounded-full border-2 border-ink bg-hwite p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
               }
             />
           </li>
@@ -1367,7 +1367,7 @@ function LensPill({
         disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border-2 border-ink bg-hwite px-4 py-2 text-[14px] font-bold shadow-[3px_3px_0_0_#0f0000] transition-colors hover:bg-ink hover:text-hwite disabled:cursor-not-allowed disabled:opacity-60 md:text-[16px]"
+        className="flex items-center gap-2 rounded-full border-2 border-ink bg-hwite px-4 py-2 text-[14px] font-bold shadow-[3px_3px_0_0_#0f0000] outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite disabled:cursor-not-allowed disabled:opacity-60 md:text-[16px]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -1413,7 +1413,7 @@ function LensPill({
                       setOpen(false);
                       onPick(lensId);
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold transition-colors hover:bg-ink hover:text-hwite"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -1537,7 +1537,7 @@ function ContactFooter({ lens }: { lens: Lens }) {
         <div className="mt-10 flex flex-wrap items-center justify-center gap-[23px]">
           <a
             href="mailto:designbeanies@gmail.com"
-            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-ink p-[10px] text-[20px] font-normal leading-none text-hwite transition-colors ${accent.buttonHoverBorder} ${accent.buttonHoverBg} hover:text-ink`}
+            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-ink p-[10px] text-[20px] font-normal leading-none text-hwite outline-none transition-colors focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${accent.buttonHoverBorder} ${accent.buttonHoverBg} hover:text-ink`}
           >
             Email me
           </a>
@@ -1545,7 +1545,7 @@ function ContactFooter({ lens }: { lens: Lens }) {
             href="https://www.linkedin.com/in/chaelawatkins"
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-transparent p-[10px] text-[20px] font-normal leading-none text-ink transition-[background-color,border-color,color,box-shadow] ${accent.buttonHoverBorder} ${accent.buttonHoverShadow}`}
+            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-transparent p-[10px] text-[20px] font-normal leading-none text-ink outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite ${accent.buttonHoverBorder} ${accent.buttonHoverShadow}`}
           >
             Connect on LinkedIn
           </a>
@@ -1733,7 +1733,7 @@ function FitSection({ lens }: { lens: Lens }) {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="text-ink/50 hover:text-ink"
+                className="rounded-sm text-ink/50 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
                 aria-label="Clear search"
               >
                 ✕
@@ -1763,10 +1763,10 @@ function FitSection({ lens }: { lens: Lens }) {
                     }}
                     onClick={() => toggleSkill(skill)}
                     aria-pressed={isOn}
-                    className={`${skillPillBase} transition-colors ${
+                    className={`${skillPillBase} outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
                       isOn
-                        ? "bg-ink text-hwite"
-                        : "bg-transparent text-ink hover:bg-ink hover:text-hwite"
+                        ? "bg-ink text-hwite focus-visible:ring-hwite focus-visible:ring-offset-ink"
+                        : "bg-transparent text-ink hover:bg-ink hover:text-hwite focus-visible:ring-ink focus-visible:ring-offset-hwite"
                     }`}
                   >
                     {skill}
@@ -1786,7 +1786,7 @@ function FitSection({ lens }: { lens: Lens }) {
                     ? "Show fewer skills"
                     : `Show ${morePillCount} additional skills`
                 }
-                className={`${skillPillBase} relative inline-flex items-center justify-center box-border shrink-0 transition-colors bg-transparent text-ink hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2`}
+                className={`${skillPillBase} relative inline-flex shrink-0 items-center justify-center bg-transparent text-ink outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite`}
               >
                 {/* Wider of "Show less" / "+N" — no inner padding (outer skillPillBase already pads) */}
                 <span className="invisible block" aria-hidden>
@@ -1833,7 +1833,7 @@ function FitSection({ lens }: { lens: Lens }) {
             <button
               type="button"
               onClick={clearSelection}
-              className="mt-5 text-[13px] font-semibold uppercase tracking-wide text-ink/60 underline-offset-4 hover:text-ink hover:underline"
+              className="mt-5 rounded-sm text-[13px] font-semibold uppercase tracking-wide text-ink/60 underline-offset-4 outline-none hover:text-ink hover:underline focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
             >
               Clear {selected.size} selected
             </button>
@@ -1982,7 +1982,7 @@ function ProjectSection({ project }: { project: Project }) {
               type="button"
               onClick={() => setExpanded((e) => !e)}
               aria-expanded={expanded}
-              className="relative overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2"
+              className="relative overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
             >
               {/* Crossfade label so it doesn't snap between the two strings. */}
               <span className="invisible block" aria-hidden>
@@ -2139,7 +2139,7 @@ function DesignerProjectSection({ project }: { project: DesignerProject }) {
               type="button"
               onClick={() => setExpanded((e) => !e)}
               aria-expanded={expanded}
-              className="relative box-border overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 md:border-2"
+              className="relative box-border overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite md:border-2"
             >
               <span className="invisible block" aria-hidden>
                 {expanded
@@ -2425,7 +2425,7 @@ function EspressoBreakSection() {
               href="https://makeagif.com/gif/brooklyn-nine-nine-cool-cool-cool-UtoxFx"
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full"
+              className="block w-full rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -2441,7 +2441,7 @@ function EspressoBreakSection() {
                 href="https://makeagif.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline decoration-hwite/30 underline-offset-2 hover:text-hwite/70"
+                className="rounded-sm underline decoration-hwite/30 underline-offset-2 outline-none hover:text-hwite/70 focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 MakeaGif
               </a>
