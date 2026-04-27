@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
@@ -1053,6 +1053,11 @@ export default function Home() {
         hideBottomBorder={lens !== null}
       />
 
+      {/* Fixed pill: render after Hero so tab order matches top-to-bottom layout. */}
+      {lens !== null && (
+        <LensPill current={lens} onPick={requestLens} disabled={locked} />
+      )}
+
       <LensView
         lens={lens}
         onPick={requestLens}
@@ -1085,10 +1090,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {lens !== null && (
-        <LensPill current={lens} onPick={requestLens} disabled={locked} />
-      )}
     </main>
   );
 }
@@ -1189,6 +1190,7 @@ function WhoAreYouSection({
   onPick: (lens: Lens) => void;
   disabled: boolean;
 }) {
+  const cardNameId = useId();
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -1242,16 +1244,19 @@ function WhoAreYouSection({
       >
         {LENS_ORDER.map((lensId) => {
           const meta = LENSES[lensId];
+          const titleId = `${cardNameId}-${lensId}-title`;
+          const descId = `${cardNameId}-${lensId}-desc`;
           return (
             <button
               key={lensId}
               type="button"
               disabled={disabled}
+              aria-labelledby={`${titleId} ${descId}`}
               onClick={() => onPick(lensId)}
               className={[
                 "m-0 appearance-none border-0 bg-transparent p-0 font-sans",
                 "group relative flex w-[263px] max-w-[80vw] shrink-0 snap-center flex-col items-stretch text-left text-ink transition-transform duration-200",
-                "outline-none",
+                "scroll-mx-4 outline-none",
                 "focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite",
                 "md:max-w-[263px]",
                 disabled
@@ -1276,10 +1281,16 @@ function WhoAreYouSection({
                 className="box-border flex h-[304px] w-full flex-col justify-end border-[3px] border-ink p-5 pb-6 text-ink md:border-2"
                 style={{ backgroundColor: meta.bg }}
               >
-                <span className="block text-left text-[40px] font-bold leading-none">
+                <span
+                  id={titleId}
+                  className="block text-left text-[40px] font-bold leading-none"
+                >
                   {meta.label}
                 </span>
-                <span className="mt-3 block text-left text-[16px] leading-snug">
+                <span
+                  id={descId}
+                  className="mt-3 block text-left text-[16px] leading-snug"
+                >
                   {meta.desc}
                 </span>
               </span>
@@ -1327,6 +1338,8 @@ function LensPill({
   onPick: (lens: Lens) => void;
   disabled: boolean;
 }) {
+  const panelId = useId();
+  const switchHeadingId = useId();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -1365,7 +1378,8 @@ function LensPill({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={disabled}
-        aria-haspopup="menu"
+        aria-haspopup="true"
+        aria-controls={open ? panelId : undefined}
         aria-expanded={open}
         className="flex items-center gap-2 rounded-full border-2 border-ink bg-hwite px-4 py-2 text-[14px] font-bold shadow-[3px_3px_0_0_#0f0000] outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite disabled:cursor-not-allowed disabled:opacity-60 md:text-[16px]"
       >
@@ -1390,45 +1404,52 @@ function LensPill({
 
       <AnimatePresence>
         {open && (
-          <motion.ul
+          <motion.div
             key="lens-menu"
-            role="menu"
+            id={panelId}
+            role="group"
+            aria-labelledby={switchHeadingId}
             initial={{ opacity: 0, y: -8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.16, ease: EASE_OUT_CUBIC }}
             className="absolute right-0 mt-3 min-w-[240px] origin-top-right overflow-hidden rounded-3xl border-2 border-ink bg-hwite shadow-[4px_4px_0_0_#0f0000]"
           >
-            <li className="border-b-2 border-ink/30 px-4 py-2 text-[12px] font-bold uppercase tracking-wide text-ink/60">
+            <div
+              id={switchHeadingId}
+              className="border-b-2 border-ink/30 px-4 py-2 text-[12px] font-bold uppercase tracking-wide text-ink/60"
+            >
               Switch lens
-            </li>
-            {others.map((lensId) => {
-              const m = LENSES[lensId];
-              return (
-                <li key={lensId}>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setOpen(false);
-                      onPick(lensId);
-                    }}
-                    className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={m.character.src}
-                      alt=""
-                      aria-hidden
-                      className="h-8 w-auto"
-                      draggable={false}
-                    />
-                    <span>{m.label}</span>
-                  </button>
-                </li>
-              );
-            })}
-          </motion.ul>
+            </div>
+            <ul className="m-0 list-none p-0">
+              {others.map((lensId) => {
+                const m = LENSES[lensId];
+                return (
+                  <li key={lensId} className="list-none">
+                    <button
+                      type="button"
+                      aria-label={`Switch to ${m.label}`}
+                      onClick={() => {
+                        setOpen(false);
+                        onPick(lensId);
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={m.character.src}
+                        alt=""
+                        aria-hidden
+                        className="h-8 w-auto"
+                        draggable={false}
+                      />
+                      <span>{m.label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
