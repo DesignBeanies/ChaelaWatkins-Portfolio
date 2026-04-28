@@ -14,7 +14,10 @@ const port = process.env.PORT ?? "3000";
 const basePath = "/ChaelaWatkins-Portfolio";
 
 const url = `http://localhost:${port}${basePath}/`;
-console.log(`\n  Portfolio (use this URL): ${url}\n`);
+console.log(`\n  Portfolio (use this URL): ${url}`);
+console.log(
+  `  If you see 404: run npm run dev:clean and open the URL above (with trailing slash).\n`,
+);
 
 const child = spawn(
   "npx",

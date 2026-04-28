@@ -1904,18 +1904,30 @@ function FitSection({
 
   const matchCopy = useMemo(() => {
     if (selected.size === 0) return "";
-    if (matchPct >= 95)
-      return "Spot on — Chaela’s strongest in exactly these areas.";
-    if (matchPct >= 85)
-      return "Strong fit. A handful of areas are still growing, but the core is there.";
-    if (matchPct >= 70)
-      return "Most of what you need is there. A couple of gaps are worth a conversation.";
-    return "Partial fit — some of these are growth areas rather than strengths.";
-  }, [selected.size, matchPct]);
+    const designer = lens === "designer";
+    if (matchPct >= 95) {
+      return designer
+        ? "Dangerously aligned: she’ll probably want to nerd out about all of this."
+        : "This list matches what she actually ships: strong overlap.";
+    }
+    if (matchPct >= 85) {
+      return designer
+        ? "Solid overlap: a couple picks are stretch-goal territory."
+        : "Solid overlap: what you picked lines up with how she actually works.";
+    }
+    if (matchPct >= 70) {
+      return designer
+        ? "Mixed bag on craft: some core hits, some vibes and curiosity."
+        : "Strong overlap where it counts: plenty to build on.";
+    }
+    return designer
+      ? "Chaos selection: bold picks. Conversation could go anywhere fun."
+      : "Wide mix: she’d bring a unique perspective to your team, not a bland keyword stack.";
+  }, [selected.size, matchPct, lens]);
 
   // The banner in the Figma spec is a single consistent style (lighter pink on
   // pink, rounded, soft shadow). We only change the leading glyph to reflect
-  // confidence — ✔ for strong matches, ! when it starts to slip.
+  // confidence: ✔ for strong matches, ⚠ when it starts to slip.
   const matchIcon = matchPct >= 80 ? "✔️" : "⚠️";
 
   function toggleSkill(skill: string) {
@@ -2091,7 +2103,7 @@ function FitSection({
 
             {visibleSkills.length === 0 && (
               <p className="text-[14px] italic text-ink/70">
-                Nothing quite like “{query}” in Chaela’s toolkit — try another
+                Nothing quite like “{query}” in Chaela’s toolkit: try another
                 term.
               </p>
             )}
