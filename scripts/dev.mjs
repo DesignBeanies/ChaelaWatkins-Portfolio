@@ -19,7 +19,12 @@ console.log(`\n  Portfolio (use this URL): ${url}\n`);
 const child = spawn(
   "npx",
   ["next", "dev", "-H", "0.0.0.0", "-p", port],
-  { cwd: root, stdio: "inherit", shell: true },
+  {
+    cwd: root,
+    stdio: "inherit",
+    shell: true,
+    env: { ...process.env, NODE_ENV: "development" },
+  },
 );
 
 child.on("exit", (code, signal) => {

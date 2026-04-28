@@ -2037,10 +2037,12 @@ function ProjectSection({ project }: { project: Project }) {
           <DetailRow label="The Approach" body={project.approach} />
           <DetailRow label="The Solution" body={project.solution} />
         </div>
+      </div>
 
-        <div className="mt-16 grid grid-cols-1 gap-10 md:mt-[110px] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+      <div className="mt-16 w-full md:mt-[110px]">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
               Before
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2053,7 +2055,7 @@ function ProjectSection({ project }: { project: Project }) {
             />
           </figure>
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
               After
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2229,10 +2231,10 @@ function DesignerProjectSection({ project }: { project: DesignerProject }) {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
+      <div className="w-full pb-16 md:pb-24">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
               Before
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2245,7 +2247,7 @@ function DesignerProjectSection({ project }: { project: DesignerProject }) {
             />
           </figure>
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
               After
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2512,44 +2514,44 @@ function ApproachSection() {
         </h2>
       </div>
 
-      <div>
-        {JANE_PRINCIPLES.map((principle, i) => {
-          const reversed = i % 2 === 1;
-          // The icon panel alternates between goldenhour and sunnies row to
-          // row — Figma does this so the glyph always sits on the opposite
-          // of its own fill color (yellow bulb on orange, orange rocket on
-          // yellow, etc.). The Flaticon SVGs already carry the correct
-          // glyph color baked in.
-          const iconPanelBg = reversed ? "bg-sunnies" : "bg-goldenhour";
-          return (
-            <React.Fragment key={principle.title}>
-              <PrincipleRow
-                principle={principle}
-                reversed={reversed}
-                iconPanelBg={iconPanelBg}
+      {JANE_PRINCIPLES.map((principle, i) => {
+        const reversed = i % 2 === 1;
+        // The icon panel alternates between goldenhour and sunnies row to
+        // row — Figma does this so the glyph always sits on the opposite
+        // of its own fill color (yellow bulb on orange, orange rocket on
+        // yellow, etc.). The Flaticon SVGs already carry the correct
+        // glyph color baked in.
+        const iconPanelBg = reversed ? "bg-sunnies" : "bg-goldenhour";
+        return (
+          <React.Fragment key={principle.title}>
+            {/* PrincipleRow is full viewport width on md+ so colored panels bleed edge-to-edge */}
+            <PrincipleRow
+              principle={principle}
+              reversed={reversed}
+              iconPanelBg={iconPanelBg}
+            />
+            {/* Full-bleed strip — outside max-width so raster spans viewport */}
+            {/* The img's width/height attrs give the browser an implicit
+                aspect-ratio so layout space is reserved before the PNG
+                arrives (no CLS). h-auto lets the image derive its own
+                height from that ratio + w-full parent — unlike h-full,
+                which can fight aspect-ratio on the parent and produce a
+                sub-viewport box. */}
+            <figure className="w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={principle.image.src}
+                alt={principle.image.alt}
+                width={2560}
+                height={1722}
+                className="block h-auto w-full select-none"
+                draggable={false}
+                loading="lazy"
               />
-              {/* The img's width/height attrs give the browser an implicit
-                  aspect-ratio so layout space is reserved before the PNG
-                  arrives (no CLS). h-auto lets the image derive its own
-                  height from that ratio + w-full parent — unlike h-full,
-                  which can fight aspect-ratio on the parent and produce a
-                  sub-viewport box. */}
-              <figure className="w-full">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={principle.image.src}
-                  alt={principle.image.alt}
-                  width={2560}
-                  height={1722}
-                  className="block h-auto w-full select-none"
-                  draggable={false}
-                  loading="lazy"
-                />
-              </figure>
-            </React.Fragment>
-          );
-        })}
-      </div>
+            </figure>
+          </React.Fragment>
+        );
+      })}
     </section>
   );
 }
@@ -2568,8 +2570,16 @@ function PrincipleRow({
   // which side gets which; the Figma composition alternates
   // (text→icon, icon→text, text→icon, icon→text).
   const text = (
-    <div className="flex min-h-[320px] items-center bg-hwite px-6 py-14 md:min-h-[598px] md:px-20">
-      <div className="flex max-w-[549px] flex-col gap-6 md:gap-8">
+    <div
+      className={[
+        "flex min-h-[320px] items-center bg-hwite py-14 md:min-h-[598px]",
+        // Match page gutters; inner copy stays max-w while column spans half the viewport
+        reversed ? "px-6 md:pl-6 md:pr-20" : "px-6 md:pl-20 md:pr-6",
+      ].join(" ")}
+    >
+      <div
+        className={`flex w-full max-w-[549px] flex-col gap-6 md:gap-8 ${reversed ? "md:ml-auto" : ""}`}
+      >
         <h3 className="text-[24px] font-normal leading-[1.15] text-ink md:text-[32px]">
           {principle.title}
         </h3>
@@ -2581,7 +2591,12 @@ function PrincipleRow({
   );
   const icon = (
     <div
-      className={`flex min-h-[320px] items-center justify-center px-6 py-14 md:min-h-[598px] ${iconPanelBg}`}
+      className={[
+        "flex min-h-[320px] items-center justify-center py-14 md:min-h-[598px]",
+        // Bleed colored panel to viewport edge; keep padding only on the gutter side
+        reversed ? "md:pl-0 md:pr-6" : "md:pl-6 md:pr-0",
+        iconPanelBg,
+      ].join(" ")}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -2598,7 +2613,8 @@ function PrincipleRow({
 
   // Mobile (e.g. 465:64353): stacked, #F3F3F3, 164px round icon, 32/24 type.
   const mobile = (
-    <div className="bg-[#F3F3F3] px-6 py-[60px] md:hidden">
+    <div className="w-full bg-[#F3F3F3] py-[60px] md:hidden">
+      <div className="mx-auto max-w-[1280px] px-6">
       <div
         className={`flex h-[164px] w-[164px] items-center justify-center self-start rounded-full p-[34px] ${iconPanelBg}`}
       >
@@ -2621,13 +2637,14 @@ function PrincipleRow({
           {principle.body}
         </p>
       </div>
+      </div>
     </div>
   );
 
   return (
     <>
       {mobile}
-      <div className="hidden md:grid md:grid-cols-2">
+      <div className="hidden w-full md:grid md:grid-cols-2">
         {reversed ? (
           <>
             {icon}

@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "verify:styling": "node scripts/verify-styling.mjs",
+    "verify": "npm run lint && npm run build && npm run verify:styling",
     "optimize:pngs": "node scripts/optimize-pngs.mjs"
   },
   "dependencies": {

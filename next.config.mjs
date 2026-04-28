@@ -2,24 +2,24 @@
 const basePath = "/ChaelaWatkins-Portfolio";
 
 /**
- * Only `next build` sets NODE_ENV=production reliably. Using `=== "development"`
- * breaks when NODE_ENV is unset — Next would still enable `output: "export"` in
- * dev and Tailwind/CSS chunks fail to load (unstyled page).
+ * Enable static export only when `next build` runs — not from NODE_ENV alone.
+ * A stray `NODE_ENV=production` (shell, CI, dotenv) during `next dev` would
+ * otherwise turn on `output: "export"` and Tailwind/CSS chunks fail to load.
  */
-const isProduction = process.env.NODE_ENV === "production";
+const isRunningNextBuild = process.argv.includes("build");
 
 /**
- * Static export only for production builds (GitHub Pages).
- * Non-production: no export so dev server loads CSS correctly; root redirect works.
+ * Static export for production `next build` (GitHub Pages).
+ * Dev omits export so CSS loads; root redirect only when not building.
  */
 const nextConfig = {
-  ...(isProduction ? { output: "export" } : {}),
+  ...(isRunningNextBuild ? { output: "export" } : {}),
   basePath,
   trailingSlash: true,
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  ...(!isProduction
+  ...(!isRunningNextBuild
     ? {
         async redirects() {
           return [
