@@ -192,8 +192,6 @@ const SKILL_VOCAB: SkillEntry[] = [
       "design system",
       "component libraries",
       "component library",
-      "design tokens",
-      "tokens",
       "pattern library",
     ],
   },
@@ -255,11 +253,40 @@ const SKILL_VOCAB: SkillEntry[] = [
   },
   { name: "Brand identity", weight: 1.0, aliases: ["brand", "branding", "verbal identity", "visual identity"] },
   { name: "Visual storytelling", weight: 1.0, aliases: ["storytelling", "narrative", "story frames"] },
-  { name: "Content strategy", weight: 1.0, aliases: ["copywriting", "content", "messaging", "content design", "editorial"] },
+  { name: "Content strategy", weight: 1.0, aliases: ["copywriting", "content", "messaging", "editorial"] },
+  {
+    name: "Content design & UX writing",
+    weight: 0.6,
+    aliases: [
+      "content design",
+      "UX writing",
+      "ux writing",
+      "microcopy",
+      "in-product copy",
+      "product copy",
+      "UX content",
+    ],
+  },
 
   // Tier 2 — solid (0.9)
   { name: "Product strategy", weight: 0.9, aliases: ["strategy", "strategic", "positioning", "GTM", "go-to-market"] },
   { name: "Systems thinking", weight: 0.9, aliases: ["systems", "holistic", "big-picture", "end-to-end thinking", "ecosystem"] },
+  {
+    name: "Design tokens",
+    weight: 0.9,
+    aliases: ["tokens", "design token", "token systems", "semantic tokens", "token naming"],
+  },
+  {
+    name: "Platform thinking",
+    weight: 0.9,
+    aliases: [
+      "platform design",
+      "platform UX",
+      "platform strategy",
+      "multi-product",
+      "platform ecosystems",
+    ],
+  },
   {
     name: "Stakeholder alignment",
     weight: 0.9,
@@ -416,8 +443,20 @@ const SKILL_VOCAB: SkillEntry[] = [
   // Senior product
   {
     name: "Product roadmapping",
-    weight: 0.9,
+    weight: 0.6,
     aliases: ["roadmap", "product roadmap", "roadmapping", "roadmaps"],
+  },
+  {
+    name: "Product documentation",
+    weight: 0.9,
+    aliases: [
+      "design documentation",
+      "spec documentation",
+      "product docs",
+      "design docs",
+      "documentation",
+      "specs docs",
+    ],
   },
   {
     name: "OKRs",
@@ -560,6 +599,41 @@ const SKILL_VOCAB: SkillEntry[] = [
       "machine learning",
     ],
   },
+  {
+    name: "Human-AI interaction",
+    weight: 0.8,
+    aliases: [
+      "human AI interaction",
+      "human-AI interaction",
+      "human AI",
+      "HAI",
+      "human-in-the-loop",
+      "human in the loop",
+    ],
+  },
+  {
+    name: "AI UX",
+    weight: 0.8,
+    aliases: [
+      "AI product UX",
+      "AI/UX",
+      "generative UX",
+      "AI experience design",
+      "machine learning UX",
+    ],
+  },
+  {
+    name: "Conversation design & UX",
+    weight: 0.8,
+    aliases: [
+      "conversation design",
+      "conversational UX",
+      "chat UX",
+      "voice UX",
+      "dialogue design",
+      "assistant UX",
+    ],
+  },
 
   // Tier 3 — familiar / adjacent (0.8)
   {
@@ -575,6 +649,17 @@ const SKILL_VOCAB: SkillEntry[] = [
       "CSS",
       "JavaScript",
       "JS",
+    ],
+  },
+  {
+    name: "Technical UX",
+    weight: 0.7,
+    aliases: [
+      "technical product design",
+      "engineering-adjacent UX",
+      "implementation-aware design",
+      "systems-aware UX",
+      "deep technical UX",
     ],
   },
   {
@@ -613,6 +698,57 @@ const SKILL_VOCAB: SkillEntry[] = [
     aliases: ["animation", "framer motion", "motion"],
   },
   { name: "Data viz", weight: 0.6, aliases: ["data visualization", "charts", "dashboards", "graph", "data storytelling"] },
+
+  // Enterprise / B2B SaaS — dense workflows & governance (0.7)
+  {
+    name: "Enterprise & B2B SaaS UX",
+    weight: 0.7,
+    aliases: [
+      "enterprise UX",
+      "B2B",
+      "SaaS",
+      "B2B SaaS",
+      "enterprise software",
+      "business software",
+      "B2B product",
+    ],
+  },
+  {
+    name: "Complex workflow design",
+    weight: 0.7,
+    aliases: [
+      "complex workflows",
+      "multi-step workflows",
+      "multi-step flows",
+      "workflow design",
+      "linear workflows",
+      "branching workflows",
+    ],
+  },
+  {
+    name: "Admin & dense UI UX",
+    weight: 0.7,
+    aliases: [
+      "dense admin UIs",
+      "admin UX",
+      "data-dense UI",
+      "internal tools UX",
+      "power-user UX",
+      "operations UX",
+    ],
+  },
+  {
+    name: "Permissions & audit UX",
+    weight: 0.7,
+    aliases: [
+      "permissions UX",
+      "roles and permissions",
+      "audit trails",
+      "governance UX",
+      "compliance workflows",
+      "access control UX",
+    ],
+  },
 ];
 
 // Case studies appear in the order they render on the page — use that order
@@ -660,6 +796,56 @@ function findSkill(query: string): SkillEntry[] {
   return scored
     .sort((a, b) => b.score - a.score)
     .map((s) => s.entry);
+}
+
+// Case-study cards use shorter copy than SKILL_VOCAB names — map to canonical
+// labels so intersection with fit `selected` (always canonical) works.
+const PROJECT_PILL_NORMALIZATION: Record<string, string> = {
+  "ai-assisted design": "AI-assisted design & critique",
+  "ux design": "UX & product design",
+  "ui design": "UI & visual design",
+  "visual design": "UI & visual design",
+  research: "User research",
+  "stakeholder mgmt": "Stakeholder alignment",
+  brand: "Brand identity",
+  "front-end collab": "Front-end development",
+  qa: "Design ops",
+  photography: "Illustration",
+  merchandising: "Ecommerce",
+};
+
+function normalizeProjectPillToCanonical(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const lower = t.toLowerCase();
+  const mapped = PROJECT_PILL_NORMALIZATION[lower];
+  if (mapped) return mapped;
+  for (const entry of SKILL_VOCAB) {
+    if (entry.name.toLowerCase() === lower) return entry.name;
+    for (const a of entry.aliases ?? []) {
+      if (a.toLowerCase() === lower) return entry.name;
+    }
+  }
+  return null;
+}
+
+/** Intersects fit selection with a project’s pills; order follows selection order. */
+function matchedSkillsForProject(
+  selected: Set<string>,
+  skills: string[],
+  moreSkills: string[],
+): string[] {
+  if (selected.size === 0) return [];
+  const proj = new Set<string>();
+  for (const raw of [...skills, ...moreSkills]) {
+    const c = normalizeProjectPillToCanonical(raw);
+    if (c) proj.add(c);
+  }
+  const out: string[] = [];
+  selected.forEach((s) => {
+    if (proj.has(s)) out.push(s);
+  });
+  return out;
 }
 
 type Project = {
@@ -983,6 +1169,10 @@ type Phase = "idle" | "animating";
 
 export default function Home() {
   const [lens, setLens] = useState<Lens | null>(null);
+  /** Shared across fit band + case-study pills (recruiter/designer only). */
+  const [fitSkillSelection, setFitSkillSelection] = useState<Set<string>>(
+    () => new Set(),
+  );
   // The view we're transitioning away from — used to render the sliding
   // "drawer" on top of the new view during the wipe.
   const [prevLens, setPrevLens] = useState<Lens | null>(null);
@@ -1062,6 +1252,8 @@ export default function Home() {
         lens={lens}
         onPick={requestLens}
         disabled={locked}
+        fitSkillSelection={fitSkillSelection}
+        setFitSkillSelection={setFitSkillSelection}
       />
 
       {/* Sliding drawer — a snapshot of the old view capped by a 2px ink
@@ -1085,7 +1277,13 @@ export default function Home() {
             }}
           >
             <div className="pointer-events-none">
-              <LensView lens={prevLens} onPick={() => {}} disabled />
+              <LensView
+                lens={prevLens}
+                onPick={() => {}}
+                disabled
+                fitSkillSelection={fitSkillSelection}
+                setFitSkillSelection={setFitSkillSelection}
+              />
             </div>
           </motion.div>
         )}
@@ -1102,16 +1300,32 @@ function LensView({
   lens,
   onPick,
   disabled,
+  fitSkillSelection,
+  setFitSkillSelection,
 }: {
   lens: Lens | null;
   onPick: (lens: Lens) => void;
   disabled: boolean;
+  fitSkillSelection: Set<string>;
+  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
 }) {
   if (lens === null) {
     return <WhoAreYouSection onPick={onPick} disabled={disabled} />;
   }
-  if (lens === "recruiter") return <RecruiterVariant />;
-  if (lens === "designer") return <DesignerVariant />;
+  if (lens === "recruiter")
+    return (
+      <RecruiterVariant
+        fitSkillSelection={fitSkillSelection}
+        setFitSkillSelection={setFitSkillSelection}
+      />
+    );
+  if (lens === "designer")
+    return (
+      <DesignerVariant
+        fitSkillSelection={fitSkillSelection}
+        setFitSkillSelection={setFitSkillSelection}
+      />
+    );
   if (lens === "jane") return <JaneVariant />;
   // All three lens types are handled above; TS narrows `lens` to never here.
   return null;
@@ -1495,15 +1709,28 @@ const ACCENTS: Record<Lens, Accent> = {
   },
 };
 
-function RecruiterVariant() {
+function RecruiterVariant({
+  fitSkillSelection,
+  setFitSkillSelection,
+}: {
+  fitSkillSelection: Set<string>;
+  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+}) {
   return (
     <div>
-      <FitSection lens="recruiter" />
+      <FitSection
+        lens="recruiter"
+        selected={fitSkillSelection}
+        setSelected={setFitSkillSelection}
+      />
 
       {/* Case studies — espresso break after the 2nd portfolio block */}
       {PROJECTS.map((project, index) => (
         <React.Fragment key={project.title}>
-          <ProjectSection project={project} />
+          <ProjectSection
+            project={project}
+            fitSkillSelection={fitSkillSelection}
+          />
           {index === 1 && <EspressoBreakSection />}
         </React.Fragment>
       ))}
@@ -1522,14 +1749,27 @@ function RecruiterVariant() {
 // build" three-column section that only the designer lens surfaces.
 // ───────────────────────────────────────────────────────────────────────────
 
-function DesignerVariant() {
+function DesignerVariant({
+  fitSkillSelection,
+  setFitSkillSelection,
+}: {
+  fitSkillSelection: Set<string>;
+  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+}) {
   return (
     <div>
-      <FitSection lens="designer" />
+      <FitSection
+        lens="designer"
+        selected={fitSkillSelection}
+        setSelected={setFitSkillSelection}
+      />
 
       {DESIGNER_PROJECTS.map((project, index) => (
         <React.Fragment key={project.title}>
-          <DesignerProjectSection project={project} />
+          <DesignerProjectSection
+            project={project}
+            fitSkillSelection={fitSkillSelection}
+          />
           {index === 1 && <EspressoBreakSection />}
         </React.Fragment>
       ))}
@@ -1592,8 +1832,15 @@ function ContactFooter({ lens }: { lens: Lens }) {
 
 const FIT_PILL_MAX = 7;
 
-function FitSection({ lens }: { lens: Lens }) {
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+function FitSection({
+  lens,
+  selected,
+  setSelected,
+}: {
+  lens: Exclude<Lens, "jane">;
+  selected: Set<string>;
+  setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
+}) {
   const [query, setQuery] = useState("");
   const [pillsExpanded, setPillsExpanded] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -1681,7 +1928,7 @@ function FitSection({ lens }: { lens: Lens }) {
   }
 
   function clearSelection() {
-    setSelected(new Set());
+    setSelected(() => new Set());
     setQuery("");
   }
 
@@ -1922,17 +2169,123 @@ function FitSection({ lens }: { lens: Lens }) {
   );
 }
 
-function ProjectSection({ project }: { project: Project }) {
+/** Case-study skill pills: intersection of fit selection with project tags (canonical). */
+function CaseStudyFitPills({
+  fitSkillSelection,
+  skills,
+  moreSkills,
+  pillClassName,
+  moreButtonClassName,
+}: {
+  fitSkillSelection: Set<string>;
+  skills: string[];
+  moreSkills: string[];
+  pillClassName: string;
+  moreButtonClassName: string;
+}) {
   const [expanded, setExpanded] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const hasMore = project.moreSkills.length > 0;
 
-  // Keep motion snappy but not jumpy. Each extra pill eases in with a tiny
-  // stagger so the group feels like it unfurls rather than snapping open.
+  const matched = useMemo(
+    () => matchedSkillsForProject(fitSkillSelection, skills, moreSkills),
+    [fitSkillSelection, skills, moreSkills],
+  );
+
   const pillEase = [0.22, 1, 0.36, 1] as const;
   const pillDuration = prefersReducedMotion ? 0 : 0.28;
   const pillStagger = prefersReducedMotion ? 0 : 0.03;
 
+  const head = matched.slice(0, FIT_PILL_MAX);
+  const tail = matched.slice(FIT_PILL_MAX);
+  const showExpandControl = tail.length > 0;
+
+  useEffect(() => {
+    if (matched.length <= FIT_PILL_MAX) setExpanded(false);
+  }, [matched.length]);
+
+  if (matched.length === 0) return null;
+
+  return (
+    <motion.div layout className="mt-8 flex flex-wrap gap-2">
+      {head.map((s) => (
+        <motion.span
+          layout="position"
+          key={s}
+          className={pillClassName}
+        >
+          {s}
+        </motion.span>
+      ))}
+      <AnimatePresence initial={false} mode="popLayout">
+        {expanded &&
+          tail.map((s, i) => (
+            <motion.span
+              layout="position"
+              key={s}
+              initial={{ opacity: 0, y: -4, scale: 0.92 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: {
+                  duration: pillDuration,
+                  ease: pillEase,
+                  delay: i * pillStagger,
+                },
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.92,
+                transition: {
+                  duration: prefersReducedMotion ? 0 : 0.18,
+                  ease: pillEase,
+                },
+              }}
+              className={pillClassName}
+            >
+              {s}
+            </motion.span>
+          ))}
+      </AnimatePresence>
+      {showExpandControl && (
+        <motion.button
+          layout="position"
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          aria-expanded={expanded}
+          className={moreButtonClassName}
+        >
+          <span className="invisible block" aria-hidden>
+            {expanded ? "Show less" : `+${tail.length} more`}
+          </span>
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.span
+              key={expanded ? "less" : "more"}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{
+                duration: prefersReducedMotion ? 0 : 0.2,
+                ease: pillEase,
+              }}
+              className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
+            >
+              {expanded ? "Show less" : `+${tail.length} more`}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
+      )}
+    </motion.div>
+  );
+}
+
+function ProjectSection({
+  project,
+  fitSkillSelection,
+}: {
+  project: Project;
+  fitSkillSelection: Set<string>;
+}) {
   return (
     <section>
       {/* Hero collage — full-bleed. Sources are 2560px-wide rasters baked from
@@ -1956,81 +2309,13 @@ function ProjectSection({ project }: { project: Project }) {
           {project.subtitle}
         </p>
 
-        <motion.div layout className="mt-8 flex flex-wrap gap-2">
-          {project.skills.map((s) => (
-            <motion.span
-              layout="position"
-              key={s}
-              className="bg-millennial p-2 text-[14px] font-normal leading-none text-ink"
-            >
-              {s}
-            </motion.span>
-          ))}
-          <AnimatePresence initial={false} mode="popLayout">
-            {expanded &&
-              project.moreSkills.map((s, i) => (
-                <motion.span
-                  layout="position"
-                  key={s}
-                  initial={{ opacity: 0, y: -4, scale: 0.92 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                    transition: {
-                      duration: pillDuration,
-                      ease: pillEase,
-                      delay: i * pillStagger,
-                    },
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.92,
-                    transition: {
-                      duration: prefersReducedMotion ? 0 : 0.18,
-                      ease: pillEase,
-                    },
-                  }}
-                  className="bg-millennial p-2 text-[14px] font-normal leading-none text-ink"
-                >
-                  {s}
-                </motion.span>
-              ))}
-          </AnimatePresence>
-          {hasMore && (
-            <motion.button
-              layout="position"
-              type="button"
-              onClick={() => setExpanded((e) => !e)}
-              aria-expanded={expanded}
-              className="relative overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
-            >
-              {/* Crossfade label so it doesn't snap between the two strings. */}
-              <span className="invisible block" aria-hidden>
-                {expanded
-                  ? "Show less"
-                  : `+${project.moreSkills.length} more`}
-              </span>
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.span
-                  key={expanded ? "less" : "more"}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{
-                    duration: prefersReducedMotion ? 0 : 0.2,
-                    ease: pillEase,
-                  }}
-                  className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
-                >
-                  {expanded
-                    ? "Show less"
-                    : `+${project.moreSkills.length} more`}
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
-          )}
-        </motion.div>
+        <CaseStudyFitPills
+          fitSkillSelection={fitSkillSelection}
+          skills={project.skills}
+          moreSkills={project.moreSkills}
+          pillClassName="bg-millennial p-2 text-[14px] font-normal leading-none text-ink"
+          moreButtonClassName="relative overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
+        />
 
         <div className="mt-12 space-y-14 md:mt-[76px] md:space-y-[110px]">
           <DetailRow label="The Challenge" body={project.challenge} />
@@ -2080,15 +2365,14 @@ function ProjectSection({ project }: { project: Project }) {
 // adds a three-column "Design & build" section afterwards.
 // ───────────────────────────────────────────────────────────────────────────
 
-function DesignerProjectSection({ project }: { project: DesignerProject }) {
-  const [expanded, setExpanded] = useState(false);
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const hasMore = project.moreSkills.length > 0;
+function DesignerProjectSection({
+  project,
+  fitSkillSelection,
+}: {
+  project: DesignerProject;
+  fitSkillSelection: Set<string>;
+}) {
   const accent = ACCENTS.designer;
-
-  const pillEase = [0.22, 1, 0.36, 1] as const;
-  const pillDuration = prefersReducedMotion ? 0 : 0.28;
-  const pillStagger = prefersReducedMotion ? 0 : 0.03;
 
   return (
     <section>
@@ -2112,80 +2396,13 @@ function DesignerProjectSection({ project }: { project: DesignerProject }) {
           {project.subtitle}
         </p>
 
-        <motion.div layout className="mt-8 flex flex-wrap gap-2">
-          {project.skills.map((s) => (
-            <motion.span
-              layout="position"
-              key={s}
-              className={`${accent.pill} p-2 text-[14px] font-normal leading-none text-ink`}
-            >
-              {s}
-            </motion.span>
-          ))}
-          <AnimatePresence initial={false} mode="popLayout">
-            {expanded &&
-              project.moreSkills.map((s, i) => (
-                <motion.span
-                  layout="position"
-                  key={s}
-                  initial={{ opacity: 0, y: -4, scale: 0.92 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                    transition: {
-                      duration: pillDuration,
-                      ease: pillEase,
-                      delay: i * pillStagger,
-                    },
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0.92,
-                    transition: {
-                      duration: prefersReducedMotion ? 0 : 0.18,
-                      ease: pillEase,
-                    },
-                  }}
-                  className={`${accent.pill} p-2 text-[14px] font-normal leading-none text-ink`}
-                >
-                  {s}
-                </motion.span>
-              ))}
-          </AnimatePresence>
-          {hasMore && (
-            <motion.button
-              layout="position"
-              type="button"
-              onClick={() => setExpanded((e) => !e)}
-              aria-expanded={expanded}
-              className="relative box-border overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite md:border-2"
-            >
-              <span className="invisible block" aria-hidden>
-                {expanded
-                  ? "Show less"
-                  : `+${project.moreSkills.length} more`}
-              </span>
-              <AnimatePresence initial={false} mode="popLayout">
-                <motion.span
-                  key={expanded ? "less" : "more"}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{
-                    duration: prefersReducedMotion ? 0 : 0.2,
-                    ease: pillEase,
-                  }}
-                  className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
-                >
-                  {expanded
-                    ? "Show less"
-                    : `+${project.moreSkills.length} more`}
-                </motion.span>
-              </AnimatePresence>
-            </motion.button>
-          )}
-        </motion.div>
+        <CaseStudyFitPills
+          fitSkillSelection={fitSkillSelection}
+          skills={project.skills}
+          moreSkills={project.moreSkills}
+          pillClassName={`${accent.pill} p-2 text-[14px] font-normal leading-none text-ink`}
+          moreButtonClassName="relative box-border overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite md:border-2"
+        />
 
         <div className="mt-12 space-y-14 md:mt-[76px] md:space-y-[110px]">
           <DetailRow
