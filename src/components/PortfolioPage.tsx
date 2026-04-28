@@ -1922,42 +1922,6 @@ function FitSection({ lens }: { lens: Lens }) {
   );
 }
 
-/** Before/after case study shots use mixed source dimensions; a shared frame
- *  keeps layout consistent (e.g. SRP tiles vs tall CDO/TMP captures). */
-function CaseStudyBeforeAfterFigures({
-  title,
-  before,
-  after,
-}: {
-  title: string;
-  before: string;
-  after: string;
-}) {
-  const slot = (src: string, kind: "before" | "after") => (
-    <figure key={kind} className="flex w-full flex-col items-stretch">
-      <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
-        {kind === "before" ? "Before" : "After"}
-      </figcaption>
-      <div className="aspect-[9/16] w-full overflow-hidden bg-hwite">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt={`${title} — ${kind}`}
-          className="block h-full w-full object-contain object-top select-none"
-          draggable={false}
-          loading="lazy"
-        />
-      </div>
-    </figure>
-  );
-  return (
-    <>
-      {slot(before, "before")}
-      {slot(after, "after")}
-    </>
-  );
-}
-
 function ProjectSection({ project }: { project: Project }) {
   const [expanded, setExpanded] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -2074,12 +2038,33 @@ function ProjectSection({ project }: { project: Project }) {
           <DetailRow label="The Solution" body={project.solution} />
         </div>
 
-        <div className="mt-16 grid grid-cols-1 gap-10 md:mt-[110px] md:grid-cols-2 md:gap-12">
-          <CaseStudyBeforeAfterFigures
-            title={project.title}
-            before={project.images.before}
-            after={project.images.after}
-          />
+        <div className="mt-16 grid grid-cols-1 gap-10 md:mt-[110px] md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+          <figure className="flex min-w-0 w-full flex-col items-stretch">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+              Before
+            </figcaption>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={project.images.before}
+              alt={`${project.title} — before`}
+              className="block h-auto w-full max-w-full select-none"
+              draggable={false}
+              loading="lazy"
+            />
+          </figure>
+          <figure className="flex min-w-0 w-full flex-col items-stretch">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+              After
+            </figcaption>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={project.images.after}
+              alt={`${project.title} — after`}
+              className="block h-auto w-full max-w-full select-none"
+              draggable={false}
+              loading="lazy"
+            />
+          </figure>
         </div>
       </div>
     </section>
@@ -2245,12 +2230,33 @@ function DesignerProjectSection({ project }: { project: DesignerProject }) {
       </div>
 
       <div className="mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-12">
-          <CaseStudyBeforeAfterFigures
-            title={project.title}
-            before={project.images.before}
-            after={project.images.after}
-          />
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+          <figure className="flex min-w-0 w-full flex-col items-stretch">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+              Before
+            </figcaption>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={project.images.before}
+              alt={`${project.title} — before`}
+              className="block h-auto w-full max-w-full select-none"
+              draggable={false}
+              loading="lazy"
+            />
+          </figure>
+          <figure className="flex min-w-0 w-full flex-col items-stretch">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
+              After
+            </figcaption>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={project.images.after}
+              alt={`${project.title} — after`}
+              className="block h-auto w-full max-w-full select-none"
+              draggable={false}
+              loading="lazy"
+            />
+          </figure>
         </div>
       </div>
     </section>
