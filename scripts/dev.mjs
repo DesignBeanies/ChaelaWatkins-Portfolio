@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Starts `next dev` and prints the URL that includes basePath (see next.config.mjs).
- * Without that path, the HTML loads but /_next assets 404 and the app looks broken.
+ * Starts `next dev`. Config uses `basePath: ""` in dev so the app runs at `/`
+ * (see next.config.mjs); without that, opening `/` while `_next` expects a path prefix breaks hydration.
  */
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -10,13 +10,11 @@ import { dirname, join } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const port = process.env.PORT ?? "3000";
-/** Keep in sync with `basePath` in next.config.mjs */
-const basePath = "/ChaelaWatkins-Portfolio";
 
-const url = `http://localhost:${port}${basePath}/`;
-console.log(`\n  Portfolio (use this URL): ${url}`);
+const url = `http://localhost:${port}/`;
+console.log(`\n  Portfolio dev (open this URL): ${url}`);
 console.log(
-  `  If you see 404: run npm run dev:clean and open the URL above (with trailing slash).\n`,
+  `  If styles/clicks break: rm -rf .next && npm run dev; production URL uses /ChaelaWatkins-Portfolio/.\n`,
 );
 
 const child = spawn(

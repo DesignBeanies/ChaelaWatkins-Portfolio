@@ -21,10 +21,12 @@ function fail(message) {
 const configPath = join(root, "next.config.mjs");
 const configSrc = readFileSync(configPath, "utf8");
 
-const baseMatch = configSrc.match(/const\s+basePath\s*=\s*["']([^"']+)["']/);
+const baseMatch = configSrc.match(
+  /const\s+prodBasePath\s*=\s*["']([^"']+)["']/,
+);
 const basePath = baseMatch?.[1];
 if (!basePath) {
-  fail('Could not parse basePath from next.config.mjs');
+  fail('Could not parse prodBasePath from next.config.mjs');
 }
 
 if (!configSrc.includes('process.argv.includes("build")')) {

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Portfolio styling sync
 
-This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** and **static export** on production builds only.
+This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** on **`next build`** (static export). **`next dev`** sets **`basePath: ""`** so the site runs at **`http://localhost:3000/`** and JS/CSS hydrate reliably.
 
 ## Do not regress dev CSS
 
@@ -19,8 +19,8 @@ This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** and
 ## After changing `next.config.mjs`, Tailwind, PostCSS, or app layout/CSS imports
 
 - Run **`npm run verify`** (lint + build + styling checks) before merging.
-- If local dev looks unstyled: **`rm -rf .next`**, then **`npm run dev`**, open the printed URL under **`/ChaelaWatkins-Portfolio/`**, and confirm **`…/_next/static/css/*.css`** returns **200** in the Network tab.
+- If local dev looks unstyled or clicks do nothing: **`rm -rf .next`**, then **`npm run dev`**, open the printed URL (**root `/`** in dev), and confirm **`/_next/static/css/*.css`** returns **200** in the Network tab.
 
 ## Paths and assets
 
-- Prefer **`NEXT_PUBLIC_BASE_PATH`** or the shared **`basePath`** constant for user-facing URLs and `publicPath()` helpers — avoid hardcoding the segment in multiple places without updating **`scripts/dev.mjs`** and **`next.config.mjs`** together.
+- Prefer **`NEXT_PUBLIC_BASE_PATH`** or **`prodBasePath`** / **`basePath`** in **`next.config.mjs`** for URLs and `publicPath()` — production deploy path is **`prodBasePath`**; dev uses an empty prefix.

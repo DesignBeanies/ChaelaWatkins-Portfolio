@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
-const basePath = "/ChaelaWatkins-Portfolio";
+/** GitHub Pages project URL — kept for `next build` / static export (see verify-styling). */
+const prodBasePath = "/ChaelaWatkins-Portfolio";
+/** In `next dev` only: serve at `http://localhost:3000/` so `_next` chunks load without the path segment. */
+const basePath = process.argv.includes("dev") ? "" : prodBasePath;
 
 /**
  * Enable static export only when `next build` runs — not from NODE_ENV alone.
@@ -19,13 +22,14 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  ...(!isRunningNextBuild
+  // Root → base path only when the app is deployed under prodBasePath (skip in `next dev`, where basePath is "").
+  ...(basePath && !isRunningNextBuild
     ? {
         async redirects() {
           return [
             {
               source: "/",
-              destination: `${basePath}/`,
+              destination: `${prodBasePath}/`,
               basePath: false,
               permanent: false,
             },

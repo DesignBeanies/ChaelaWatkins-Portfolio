@@ -2043,10 +2043,10 @@ function FitSection({
                     }}
                     onClick={() => toggleSkill(skill)}
                     aria-pressed={isOn}
-                    className={`${skillPillBase} outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${
+                    className={`${skillPillBase} outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2 ${
                       isOn
                         ? "bg-ink text-hwite focus-visible:ring-hwite focus-visible:ring-offset-ink"
-                        : "bg-transparent text-ink hover:bg-ink hover:text-hwite focus-visible:ring-ink focus-visible:ring-offset-hwite"
+                        : "bg-transparent text-ink hover:ring-1 hover:ring-inset hover:ring-ink focus-visible:ring-ink focus-visible:ring-offset-hwite"
                     }`}
                   >
                     {skill}
@@ -2066,7 +2066,7 @@ function FitSection({
                     ? "Show fewer skills"
                     : `Show ${morePillCount} additional skills`
                 }
-                className={`${skillPillBase} relative inline-flex shrink-0 items-center justify-center bg-transparent text-ink outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite`}
+                className={`${skillPillBase} relative inline-flex shrink-0 items-center justify-center bg-transparent text-ink outline-none transition hover:ring-1 hover:ring-inset hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite`}
               >
                 {/* Wider of "Show less" / "+N" — no inner padding (outer skillPillBase already pads) */}
                 <span className="invisible block" aria-hidden>
