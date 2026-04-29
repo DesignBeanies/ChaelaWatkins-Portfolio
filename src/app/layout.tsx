@@ -33,9 +33,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.png",
-        width: 1200,
-        height: 630,
+        url: "/og.jpg",
+        width: 1024,
+        height: 518,
         alt: "Chaela Watkins — UX & Product Designer",
       },
     ],
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Design Beanies",
     description: heroDescription,
-    images: ["/og.png"],
+    images: ["/og.jpg"],
   },
 };
 
