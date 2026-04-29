@@ -1369,7 +1369,7 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
       <div className="relative z-10 mx-auto max-w-[1280px] px-6 pt-[53px] max-md:pb-[250px] md:px-20 md:pb-24 md:pt-28">
         <div className="min-w-0 max-w-full w-2/3 max-[499px]:w-full text-ink">
           <p className="text-[24px] leading-tight text-ink md:text-[36px]">
-            I&rsquo;m Chaela Watkins a
+            I&rsquo;m Chaela Watkins
           </p>
           <h1 className="mt-2 text-[64px] font-normal uppercase leading-[55px] text-ink md:mt-6 md:text-[96px] md:leading-[0.85]">
             UX &amp; Product Designer
