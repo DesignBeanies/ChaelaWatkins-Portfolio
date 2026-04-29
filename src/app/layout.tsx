@@ -17,15 +17,16 @@ const afacad = Afacad({
 // Must match the public site origin including GitHub Pages base path.
 const siteUrl = "https://designbeanies.github.io/ChaelaWatkins-Portfolio";
 
+const heroDescription =
+  "I design strategic, creative experiences that reduce friction and impact those numbers people stare at in meetings.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Design Beanies",
-  description:
-    "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+  description: heroDescription,
   openGraph: {
     title: "Design Beanies",
-    description:
-      "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+    description: heroDescription,
     url: siteUrl,
     siteName: "Design Beanies",
     locale: "en_US",
@@ -42,8 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Design Beanies",
-    description:
-      "I design experiences that reduce friction and move metrics across ecommerce, fintech, and enterprise SaaS.",
+    description: heroDescription,
     images: ["/og.png"],
   },
 };

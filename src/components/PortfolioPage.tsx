@@ -1375,8 +1375,8 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
             UX &amp; Product Designer
           </h1>
           <p className="mt-2 max-w-full text-[18px] leading-normal text-ink md:mt-10 md:leading-snug md:text-[24px]">
-            I design experiences that reduce friction and move metrics across
-            ecommerce, fintech, and enterprise SaaS.
+            I design strategic, creative experiences that reduce friction and impact
+            those numbers people stare at in meetings.
           </p>
         </div>
       </div>
