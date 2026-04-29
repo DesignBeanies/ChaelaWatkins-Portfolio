@@ -2336,10 +2336,10 @@ function ProjectSection({
         </div>
       </div>
 
-      <div className="mt-16 w-full md:mt-[110px]">
+      <div className="mx-auto mt-16 w-full max-w-[1280px] px-6 md:mt-[110px] md:px-20">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
               Before
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2352,7 +2352,7 @@ function ProjectSection({
             />
           </figure>
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
               After
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2460,10 +2460,10 @@ function DesignerProjectSection({
         </div>
       </div>
 
-      <div className="w-full pb-16 md:pb-24">
+      <div className="mx-auto w-full max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
               Before
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2476,7 +2476,7 @@ function DesignerProjectSection({
             />
           </figure>
           <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 px-6 text-center text-[28px] font-normal leading-none text-ink md:px-20 md:text-[32px]">
+            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
               After
             </figcaption>
             {/* eslint-disable-next-line @next/next/no-img-element */}
