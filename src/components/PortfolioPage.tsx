@@ -1792,8 +1792,8 @@ function ContactFooter({ lens }: { lens: Lens }) {
           Let&rsquo;s chat IRL
         </h2>
         <p className="mx-auto mt-4 max-w-[520px] text-[18px] leading-snug md:text-[22px]">
-          If you think I might be the right fit, I&rsquo;d love to hear from
-          you.
+          If you&rsquo;ve made it this far, I&rsquo;m getting the feeling we might work
+          well together, and I&rsquo;d love to know what brought you here.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-[23px]">
           <a
