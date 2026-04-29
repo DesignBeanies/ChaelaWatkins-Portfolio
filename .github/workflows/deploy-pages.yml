@@ -26,6 +26,9 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run verify:styling
+      # Self-referential out/ChaelaWatkins-Portfolio symlink is skipped in CI (see
+      # post-export-basepath-symlink.mjs). Strip any stray link before upload anyway.
+      - run: rm -rf out/ChaelaWatkins-Portfolio
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out

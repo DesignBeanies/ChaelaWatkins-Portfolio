@@ -24,3 +24,8 @@ This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** on 
 ## Paths and assets
 
 - Prefer **`NEXT_PUBLIC_BASE_PATH`** or **`prodBasePath`** / **`basePath`** in **`next.config.mjs`** for URLs and `publicPath()` — production deploy path is **`prodBasePath`**; dev uses an empty prefix.
+
+## GitHub Pages artifact (`post-export-basepath-symlink.mjs`)
+
+- **Local** builds create **`out/ChaelaWatkins-Portfolio` → `out`** so **`npm run preview`** (`serve out`) resolves prefixed asset URLs.
+- **CI** (`CI=true`) **skips** that symlink — Pages serves **`out/`** at **`/<repo>/`**, so **`out/_next`** is already correct; a self-referential symlink breaks **`upload-pages-artifact`** (runaway archive).
