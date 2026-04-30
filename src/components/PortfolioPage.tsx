@@ -1132,7 +1132,11 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
         body: "New to the team, I rapidly navigated a steep learning curve: mastering industry jargon, design systems, and team processes. By proactively asking questions and leaning on team expertise, I quickly built the context needed to make effective decisions.",
         illustration: publicPath("/projects/designer/srp-rampup.svg"),
       },
+      {
+        title: "Optimizing content & hierarchy",
+        body: "User research showed the car tile had enough information for decision-making, but was missing a critical detail: location. A major issue for a nationwide business with real shipping logistics. Instead of adding more content, we simplified — removing “quick info” and prioritizing clarity. A consistent F-pattern layout improved scannability across listings.",
         illustration: publicPath("/projects/designer/srp-content-hierarchy.svg"),
+      },
       {
         title: "A push forward",
         body: "A/B testing showed the new SRP outperformed the old across 90% of KPIs, but a drop in “Ask about this car” interactions paused rollout. We found the CTA on the car tile had been used as a workaround for missing location info. Once we solved that, the need disappeared. What looked like a loss proved the design worked — enabling full launch.",
