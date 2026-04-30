@@ -17,6 +17,10 @@ const afacad = Afacad({
 // Must match the public site origin including GitHub Pages base path.
 const siteUrl = "https://designbeanies.github.io/ChaelaWatkins-Portfolio";
 
+/** Bump this when replacing `public/og.jpg` so link previews don’t stick to an old cached image. */
+const OG_IMAGE_VERSION = "2";
+const ogImageUrl = `/og.jpg?v=${OG_IMAGE_VERSION}`;
+
 const heroDescription =
   "I design strategic, creative experiences that reduce friction and impact those numbers people stare at in meetings.";
 
@@ -33,7 +37,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og.jpg",
+        url: ogImageUrl,
         width: 1024,
         height: 518,
         alt: "Chaela Watkins — UX & Product Designer",
@@ -44,7 +48,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Design Beanies",
     description: heroDescription,
-    images: ["/og.jpg"],
+    images: [ogImageUrl],
   },
 };
 
