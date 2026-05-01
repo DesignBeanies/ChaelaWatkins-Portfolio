@@ -22,9 +22,17 @@ async function* walkPngs(dir) {
 }
 
 const root = join(process.cwd(), "public");
+
+/** Case-study comps: copy-only in repo — do not re-encode (preserves alpha / Photoshop export). */
+const SKIP_PNG_REENCODE = new Set([
+  join(root, "projects", "srp-before.png"),
+  join(root, "projects", "srp-after.png"),
+]);
+
 let saved = 0;
 let n = 0;
 for await (const file of walkPngs(root)) {
+  if (SKIP_PNG_REENCODE.has(file)) continue;
   const before = statSync(file).size;
   const buf = await sharp(file, { limitInputPixels: false })
     .png({

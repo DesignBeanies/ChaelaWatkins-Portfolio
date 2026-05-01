@@ -7,11 +7,14 @@
     "dev:clean": "rm -rf .next && node scripts/dev.mjs",
     "build": "next build && node scripts/post-export-basepath-symlink.mjs",
     "preview": "npx --yes serve out -p 4173",
+    "preview:local": "npm run build && npm run preview",
     "start": "next start",
     "lint": "next lint",
     "verify:styling": "node scripts/verify-styling.mjs",
     "verify": "npm run lint && npm run build && npm run verify:styling",
-    "optimize:pngs": "node scripts/optimize-pngs.mjs"
+    "optimize:pngs": "node scripts/optimize-pngs.mjs",
+    "probe:sca-srp": "node scripts/probe-sca-srp-before-after.mjs",
+    "probe:sca-srp:http": "node scripts/probe-sca-srp-before-after.mjs --http"
   },
   "dependencies": {
     "framer-motion": "^11.15.0",
