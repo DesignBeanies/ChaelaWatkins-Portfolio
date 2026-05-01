@@ -1028,7 +1028,7 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
     challenge:
       "ZFunk Productions poured a decade of work in Cazador Del Oso—a story of Montana’s history shown through original compositions and visual art—but the website did not stack up due to a lack of branding, paragraphs of content, and overall readability issues. We needed to tell the story clearly enough to sell gala tickets, products, and to get donations all while keeping the artist’s vision and passion at the heart. A blank canvas sounds like freedom. In practice it’s the hardest brief to execute.",
     solution:
-      "A storytelling-driven ecommerce site that weaves art, music, and narrative into a single cohesive website experience. Delivered end-to-end as sole designer and developer, helping generate $10K of revenue.",
+      "A storytelling-driven ecommerce site that weaves art, music, and narrative into a single cohesive website experience. Delivered end-to-end as sole designer and developer, helping ZFunk Productions’ Cazador del Oso generate over $14K in revenue.",
     designBuild: [
       {
         title: "Understanding the context",
