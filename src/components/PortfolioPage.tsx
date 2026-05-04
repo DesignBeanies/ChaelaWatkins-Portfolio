@@ -2753,7 +2753,8 @@ function ApproachSection() {
         const iconPanelBg = reversed ? "bg-sunnies" : "bg-goldenhour";
         return (
           <React.Fragment key={principle.title}>
-            {/* PrincipleRow is full viewport width on md+ so colored panels bleed edge-to-edge */}
+            {/* Desktop: principle copy + icon sit in the 1280px rail; flex-1 wings
+                carry the warm / hwite fills so color still reads edge-to-edge. */}
             <PrincipleRow
               principle={principle}
               reversed={reversed}
@@ -2794,16 +2795,14 @@ function PrincipleRow({
   reversed: boolean;
   iconPanelBg: string;
 }) {
-  // Text panel sits on the page canvas (hwite) so only the icon panel is
-  // a warm block — a single burst of color per row. `reversed` swaps
-  // which side gets which; the Figma composition alternates
-  // (text→icon, icon→text, text→icon, icon→text).
+  // Text panel sits on hwite. On md+, the row sits in the shared 1280px rail;
+  // full-bleed color is painted by the outer flex wings, not viewport-wide columns.
   const text = (
     <div
       className={[
         "flex min-h-[320px] items-center bg-hwite py-14 md:min-h-[598px]",
-        // Match page gutters; inner copy stays max-w while column spans half the viewport
-        reversed ? "px-6 md:pl-6 md:pr-20" : "px-6 md:pl-20 md:pr-6",
+        "px-6 md:px-0",
+        reversed ? "md:pl-12" : "md:pr-12",
       ].join(" ")}
     >
       <div
@@ -2822,8 +2821,7 @@ function PrincipleRow({
     <div
       className={[
         "flex min-h-[320px] items-center justify-center py-14 md:min-h-[598px]",
-        // Bleed colored panel to viewport edge; keep padding only on the gutter side
-        reversed ? "md:pl-0 md:pr-6" : "md:pl-6 md:pr-0",
+        "px-6 md:px-0",
         iconPanelBg,
       ].join(" ")}
     >
@@ -2873,18 +2871,34 @@ function PrincipleRow({
   return (
     <>
       {mobile}
-      <div className="hidden w-full md:grid md:grid-cols-2">
-        {reversed ? (
-          <>
-            {icon}
-            {text}
-          </>
-        ) : (
-          <>
-            {text}
-            {icon}
-          </>
-        )}
+      <div className="hidden min-h-[598px] w-full min-w-0 md:flex md:items-stretch">
+        <div
+          aria-hidden
+          className={[
+            "min-w-0 flex-1 basis-0",
+            reversed ? iconPanelBg : "bg-hwite",
+          ].join(" ")}
+        />
+        <div className="box-border grid min-w-0 w-[min(100%,1280px)] max-w-[1280px] shrink-0 grid-cols-2 px-6 md:px-20">
+          {reversed ? (
+            <>
+              {icon}
+              {text}
+            </>
+          ) : (
+            <>
+              {text}
+              {icon}
+            </>
+          )}
+        </div>
+        <div
+          aria-hidden
+          className={[
+            "min-w-0 flex-1 basis-0",
+            reversed ? "bg-hwite" : iconPanelBg,
+          ].join(" ")}
+        />
       </div>
     </>
   );
