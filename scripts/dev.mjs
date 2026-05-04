@@ -14,7 +14,7 @@ const port = process.env.PORT ?? "3000";
 const url = `http://localhost:${port}/`;
 console.log(`\n  Portfolio dev (open this URL): ${url}`);
 console.log(
-  `  If styles/clicks break: rm -rf .next && npm run dev; production URL uses /ChaelaWatkins-Portfolio/.\n`,
+  `  If styles/clicks break: rm -rf .next && npm run dev; production: https://designbeanies.com/.\n`,
 );
 
 const child = spawn(

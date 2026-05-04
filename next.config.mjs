@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-/** GitHub Pages project URL — kept for `next build` / static export (see verify-styling). */
-const prodBasePath = "/ChaelaWatkins-Portfolio";
+/** Production path prefix for static export (`next build`). Empty = site at domain root (designbeanies.com). */
+const prodBasePath = "";
 /** In `next dev` only: serve at `http://localhost:3000/` so `_next` chunks load without the path segment. */
 const basePath = process.argv.includes("dev") ? "" : prodBasePath;
 

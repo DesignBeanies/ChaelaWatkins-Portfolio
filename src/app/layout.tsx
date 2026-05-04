@@ -14,8 +14,8 @@ const afacad = Afacad({
 
 // Tab title + favicon: `title` below; favicon is `app/icon.svg` (Next.js file convention).
 // `metadataBase` makes `og:image` and similar URLs absolute for link previews (Slack, iMessage, LinkedIn).
-// Must match the public site origin including GitHub Pages base path.
-const siteUrl = "https://designbeanies.github.io/ChaelaWatkins-Portfolio";
+// Canonical public origin (custom domain on GitHub Pages).
+const siteUrl = "https://designbeanies.com";
 
 /** Bump this when replacing `public/og.jpg` so link previews don’t stick to an old cached image. */
 const OG_IMAGE_VERSION = "2";

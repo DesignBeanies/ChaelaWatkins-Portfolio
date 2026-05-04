@@ -22,12 +22,16 @@ const configPath = join(root, "next.config.mjs");
 const configSrc = readFileSync(configPath, "utf8");
 
 const baseMatch = configSrc.match(
-  /const\s+prodBasePath\s*=\s*["']([^"']+)["']/,
+  /const\s+prodBasePath\s*=\s*["']([^"']*)["']/,
 );
-const basePath = baseMatch?.[1];
-if (!basePath) {
+if (!baseMatch) {
   fail('Could not parse prodBasePath from next.config.mjs');
 }
+const basePath = baseMatch[1];
+const hrefNeedle =
+  basePath === ""
+    ? "/_next/static/css/"
+    : `${basePath}/_next/static/css/`;
 
 if (!configSrc.includes('process.argv.includes("build")')) {
   fail(
@@ -58,7 +62,6 @@ if (!existsSync(indexPath)) {
 }
 
 const html = readFileSync(indexPath, "utf8");
-const hrefNeedle = `${basePath}/_next/static/css/`;
 if (!html.includes('rel="stylesheet"') || !html.includes(hrefNeedle)) {
   fail(
     `out/index.html must include a stylesheet href under ${hrefNeedle} — basePath/CSS wiring may be wrong.`,
@@ -66,5 +69,5 @@ if (!html.includes('rel="stylesheet"') || !html.includes(hrefNeedle)) {
 }
 
 console.log(
-  `verify-styling: OK (basePath=${basePath}, ${cssFiles.length} CSS file(s))`,
+  `verify-styling: OK (basePath=${basePath === "" ? "(root)" : basePath}, ${cssFiles.length} CSS file(s))`,
 );

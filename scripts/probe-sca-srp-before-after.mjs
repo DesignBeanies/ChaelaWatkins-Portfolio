@@ -18,7 +18,7 @@ const root = join(repoRoot, "public", "projects");
 
 function readProdBasePath() {
   const src = readFileSync(join(repoRoot, "next.config.mjs"), "utf8");
-  const m = src.match(/const\s+prodBasePath\s*=\s*["']([^"']+)["']/);
+  const m = src.match(/const\s+prodBasePath\s*=\s*["']([^"']*)["']/);
   return m?.[1] ?? "";
 }
 
@@ -188,10 +188,8 @@ for (const pair of PAIRS) {
 
 if (wantHttp) {
   const prodBase = readProdBasePath();
-  /** `next dev` uses ""; `next start` / preview often use prodBasePath. */
-  const prefixes = ["", prodBase].filter(
-    (p, i, a) => p === "" || (p && a.indexOf(p) === i),
-  );
+  /** `next dev` uses ""; production may use a path prefix or empty (custom domain root). */
+  const prefixes = prodBase ? ["", prodBase] : [""];
   console.log("\n── HTTP (127.0.0.1:3000) ──");
   const paths = [
     "/projects/sca-before.png",

@@ -1,5 +1,5 @@
 /**
- * Prefix paths to files in `public/` when Next.js `basePath` is set (GitHub Pages project URL).
+ * Prefix paths to files in `public/` when Next.js `basePath` / `NEXT_PUBLIC_BASE_PATH` is non-empty.
  * `next.config` mirrors the same value into `NEXT_PUBLIC_BASE_PATH` for client-side `<img>` etc.
  */
 export function publicPath(path: string): string {

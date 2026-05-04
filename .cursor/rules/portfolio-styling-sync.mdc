@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Portfolio styling sync
 
-This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** on **`next build`** (static export). **`next dev`** sets **`basePath: ""`** so the site runs at **`http://localhost:3000/`** and JS/CSS hydrate reliably.
+This app uses **GitHub Pages** static export. **`prodBasePath`** in **`next.config.mjs`** is the production URL prefix (empty string = site at **custom domain root**, e.g. **https://designbeanies.com/**). **`next dev`** sets **`basePath: ""`** so the site runs at **`http://localhost:3000/`** and JS/CSS hydrate reliably.
 
 ## Do not regress dev CSS
 
@@ -23,9 +23,9 @@ This app uses **GitHub Pages** with **`basePath: /ChaelaWatkins-Portfolio`** on 
 
 ## Paths and assets
 
-- Prefer **`NEXT_PUBLIC_BASE_PATH`** or **`prodBasePath`** / **`basePath`** in **`next.config.mjs`** for URLs and `publicPath()` — production deploy path is **`prodBasePath`**; dev uses an empty prefix.
+- Prefer **`NEXT_PUBLIC_BASE_PATH`** or **`prodBasePath`** / **`basePath`** in **`next.config.mjs`** for URLs and `publicPath()` — production uses **`prodBasePath`** (may be empty); dev uses an empty prefix.
 
 ## GitHub Pages artifact (`post-export-basepath-symlink.mjs`)
 
-- **Local** builds create **`out/ChaelaWatkins-Portfolio` → `out`** so **`npm run preview`** (`serve out`) resolves prefixed asset URLs.
-- **CI** (`CI=true`) **skips** that symlink — Pages serves **`out/`** at **`/<repo>/`**, so **`out/_next`** is already correct; a self-referential symlink breaks **`upload-pages-artifact`** (runaway archive).
+- **Local** builds: if **`prodBasePath`** is non-empty, a symlink **`out/<segment>` → `out`** is created so **`npm run preview`** (`serve out`) resolves **`/<segment>/_next/...`** URLs. If **`prodBasePath`** is **empty**, the script **skips** the symlink (site at domain root; **`serve out`** uses **`/_next/...`** directly).
+- **CI** (`CI=true`) **skips** that symlink — Pages serves **`out/`** at the site root or project path; a self-referential symlink breaks **`upload-pages-artifact`** (runaway archive).
