@@ -2801,8 +2801,10 @@ function PrincipleRow({
     <div
       className={[
         "flex min-h-[320px] items-center bg-hwite py-14 md:min-h-[598px]",
-        "px-6 md:px-0",
-        reversed ? "md:pl-12" : "md:pr-12",
+        // Page gutters live on the text column only. Horizontal padding on the
+        // outer grid would sit between the icon fill and the flex wings, and
+        // the padded strip is transparent — so #f7f8f8 shows through as a “white” gap.
+        reversed ? "md:pr-20 md:pl-12" : "md:pl-20 md:pr-12",
       ].join(" ")}
     >
       <div
@@ -2821,7 +2823,7 @@ function PrincipleRow({
     <div
       className={[
         "flex min-h-[320px] items-center justify-center py-14 md:min-h-[598px]",
-        "px-6 md:px-0",
+        "md:px-0",
         iconPanelBg,
       ].join(" ")}
     >
@@ -2879,7 +2881,7 @@ function PrincipleRow({
             reversed ? iconPanelBg : "bg-hwite",
           ].join(" ")}
         />
-        <div className="box-border grid min-w-0 w-[min(100%,1280px)] max-w-[1280px] shrink-0 grid-cols-2 px-6 md:px-20">
+        <div className="box-border grid min-w-0 w-[min(100%,1280px)] max-w-[1280px] shrink-0 grid-cols-2">
           {reversed ? (
             <>
               {icon}
