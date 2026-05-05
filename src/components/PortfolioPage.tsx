@@ -2140,7 +2140,8 @@ function FitSection({
       coverage =
         "Nothing tagged matches these picks yet—browse below or try broader capabilities.";
     } else if (count === total) {
-      coverage = "Your selections show up in every case study below.";
+      coverage =
+        "Good news: each project below lines up with something you chose.";
     } else if (count === 1) {
       coverage = "Your selections show up in 1 case study below.";
     } else {
