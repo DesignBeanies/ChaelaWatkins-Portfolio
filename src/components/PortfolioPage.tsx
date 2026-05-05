@@ -266,40 +266,8 @@ function caseStudyOverlapStats(
   return { count, total };
 }
 
-/** Case with the most overlapping picks; ties break by page order. */
-function readingStartRecommendation(
-  lens: Exclude<Lens, "jane">,
-  selected: Set<string>,
-): { title: string; overlapSkills: number } | null {
-  if (selected.size === 0) return null;
-  const titles = FIT_CASE_ORDER[lens];
-  let bestTitle: string | null = null;
-  let bestOverlap = 0;
-  let bestIndex = titles.length;
-  for (let index = 0; index < titles.length; index++) {
-    const title = titles[index];
-    const tags = CASE_STUDY_TAGS[title]?.[lens];
-    if (!tags?.length) continue;
-    let overlapSkills = 0;
-    selected.forEach((s) => {
-      if (tags.includes(s)) overlapSkills++;
-    });
-    if (overlapSkills === 0) continue;
-    if (
-      overlapSkills > bestOverlap ||
-      (overlapSkills === bestOverlap && index < bestIndex)
-    ) {
-      bestOverlap = overlapSkills;
-      bestTitle = title;
-      bestIndex = index;
-    }
-  }
-  if (bestTitle === null) return null;
-  return { title: bestTitle, overlapSkills: bestOverlap };
-}
-
 // Master vocabulary of every skill/tool/domain the fit section can surface.
-// `weight` drives the “core craft %” readout. `aliases` are fuzzy-match hooks so typing
+// `weight` drives fit-banner tier bands (average selected skill weight). `aliases` are fuzzy-match hooks so typing
 // "IA" or "React" lands on the canonical tag. Aliases are intentionally broad
 // (synonyms, tools, acronyms, common recruiter terms) so more queries surface
 // the right pill. Every tag referenced in CASE_STUDY_TAGS is guaranteed to
@@ -2143,31 +2111,44 @@ function FitSection({
     [lens, selected],
   );
 
-  const startReading = useMemo(
-    () => readingStartRecommendation(lens, selected),
-    [lens, selected],
-  );
-
-  const craftHint = useMemo(() => {
-    if (selected.size === 0) return "";
+  /** Strength line + where selections appear (two-line banner). */
+  const fitBannerLines = useMemo((): { lead: string; coverage: string } | null => {
+    if (selected.size === 0) return null;
     const designer = lens === "designer";
-    if (craftPct >= 90) {
-      return designer
-        ? "Weighted toward core craft she lists as tier-one strengths."
-        : "Weighted toward core craft listed as tier-one in her toolkit.";
+    let lead: string;
+    if (craftPct >= 95) {
+      lead = designer
+        ? "Highly skilled: she’ll probably want to nerd out about all of this."
+        : "Strong match: this lines up with what she actually ships.";
+    } else if (craftPct >= 85) {
+      lead = designer
+        ? "Solid overlap: a couple picks are stretch-goal territory."
+        : "Solid overlap: what you picked matches how she works.";
+    } else if (craftPct >= 70) {
+      lead = designer
+        ? "Mixed bag: some core hits, some vibes and curiosity."
+        : "Good signal: plenty to build on in the cases below.";
+    } else {
+      lead = designer
+        ? "Bold mix: conversation could go anywhere fun."
+        : "Wide mix: she’d bring a unique lens—not a bland keyword stack.";
     }
-    if (craftPct >= 75) {
-      return designer
-        ? "Mix of core craft and stretch tags — still plenty of signal."
-        : "Mix of core and stretch tags — still a clear picture.";
-    }
-    return designer
-      ? "Includes more specialized picks — still useful for where her depth runs."
-      : "Includes more specialized picks — worth comparing to the cases below.";
-  }, [craftPct, lens, selected.size]);
 
-  // ✔ when the weighted craft score sits in the upper band.
-  const craftIcon = craftPct >= 80 ? "✔️" : "⚠️";
+    const { count, total } = caseStats;
+    let coverage: string;
+    if (count === 0) {
+      coverage =
+        "Nothing tagged matches these picks yet—browse below or try broader capabilities.";
+    } else if (count === total) {
+      coverage = "Your selections show up in every case study below.";
+    } else if (count === 1) {
+      coverage = "Your selections show up in 1 case study below.";
+    } else {
+      coverage = `Your selections show up in ${count} of ${total} case studies below.`;
+    }
+
+    return { lead, coverage };
+  }, [craftPct, lens, selected.size, caseStats]);
 
   function toggleSkill(skill: string) {
     setSelected((prev) => {
@@ -2383,89 +2364,34 @@ function FitSection({
                 Select capabilities to see where they land in the case studies
                 below.
               </p>
-            ) : (
+            ) : fitBannerLines ? (
               <div
                 className={
                   isDesignerFit
-                    ? "flex max-w-[340px] flex-col items-center gap-4 text-center text-ink"
-                    : "flex max-w-[340px] flex-col items-center gap-4 text-center text-ink"
+                    ? "flex max-w-[340px] flex-col items-center gap-3 text-center text-ink"
+                    : "flex max-w-[340px] flex-col items-center gap-3 text-center text-ink"
                 }
               >
                 <p
                   className={
                     isDesignerFit
-                      ? "text-[28px] font-bold leading-[1.15] md:text-[36px]"
-                      : "text-[26px] font-bold leading-[1.15] md:text-[36px]"
+                      ? "text-[20px] leading-snug md:text-[24px]"
+                      : "text-[18px] leading-snug md:text-[22px]"
                   }
                 >
-                  Touches{" "}
-                  <motion.span
-                    key={caseStats.count}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, ease: EASE_OUT_CUBIC }}
-                    className="tabular-nums"
-                  >
-                    {caseStats.count}
-                  </motion.span>{" "}
-                  of {caseStats.total} case studies
+                  {fitBannerLines.lead}
                 </p>
                 <p
                   className={
                     isDesignerFit
-                      ? "flex items-center justify-center gap-2 text-[24px] font-semibold leading-none md:text-[28px]"
-                      : "flex items-center justify-center gap-2 text-[22px] font-semibold leading-none md:text-[26px]"
+                      ? "max-w-[340px] text-[18px] leading-snug text-ink/85 md:text-[22px]"
+                      : "max-w-[340px] text-[17px] leading-snug text-ink/85 md:text-[20px]"
                   }
                 >
-                  <span aria-hidden>{craftIcon}</span>
-                  <motion.span
-                    key={craftPct}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, ease: EASE_OUT_CUBIC }}
-                  >
-                    Core craft · {craftPct}%
-                  </motion.span>
+                  {fitBannerLines.coverage}
                 </p>
-                <p
-                  className={
-                    isDesignerFit
-                      ? "max-w-[320px] text-[18px] leading-snug text-ink/85 md:text-[22px]"
-                      : "max-w-[320px] text-[17px] leading-snug text-ink/85 md:text-[20px]"
-                  }
-                >
-                  {craftHint}
-                </p>
-                {caseStats.count === 0 ? (
-                  <p
-                    className={
-                      isDesignerFit
-                        ? "max-w-[320px] text-[18px] leading-snug text-ink md:text-[22px]"
-                        : "max-w-[320px] text-[17px] leading-snug text-ink md:text-[20px]"
-                    }
-                  >
-                    These picks don&rsquo;t map to the tagged case studies below
-                    yet — browse the work or try broader capabilities.
-                  </p>
-                ) : startReading ? (
-                  <p
-                    className={
-                      isDesignerFit
-                        ? "max-w-[320px] text-[18px] leading-snug text-ink md:text-[22px]"
-                        : "max-w-[320px] text-[17px] leading-snug text-ink md:text-[20px]"
-                    }
-                  >
-                    <span className="font-semibold">Start with </span>
-                    {startReading.title}
-                    <span className="text-ink/85">
-                      {" "}
-                      — {startReading.overlapSkills} of your picks show up
-                      there.
-                    </span>
-                  </p>
-                ) : null}
               </div>
-            )}
+            ) : null}
           </motion.div>
         </div>
       </div>
