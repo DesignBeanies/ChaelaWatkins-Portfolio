@@ -71,27 +71,26 @@ const LENSES: Record<Lens, LensMeta> = {
 // Fit-section data: case-study tag sets (per lens) + master skill vocabulary
 // ───────────────────────────────────────────────────────────────────────────
 
-// Tags curated per (case study × lens). The pills shown by default in the
-// "Am I the right fit?" section are the union of every case study's tags for
-// the active lens, deduped and in first-appearance order.
+// Tags curated per (case study × lens). Used to expand the fit picker beyond
+// default capability chips and to score which case studies light up.
 const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
   "Powersports site overhaul": {
     recruiter: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Product strategy",
       "Information architecture",
       "Design systems",
       "Brand identity",
       "Stakeholder alignment",
-      "Ecommerce",
-      "KPI improvement",
+      "Commerce & conversion",
+      "Outcomes & metrics",
       "Workshop facilitation",
     ],
     designer: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Systems thinking",
       "Information architecture",
-      "OEM compliance",
+      "Regulated & partner constraints",
       "Style guide creation",
       "Brand identity",
       "Workshop facilitation",
@@ -99,9 +98,9 @@ const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
       "Stakeholder alignment",
     ],
     jane: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Brand identity",
-      "Ecommerce",
+      "Commerce & conversion",
       "Stakeholder alignment",
       "Design systems",
       "Information architecture",
@@ -110,31 +109,31 @@ const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
   },
   "Credit application redesign": {
     recruiter: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Information architecture",
       "Form design",
       "Conditional logic design",
       "Usability testing",
       "Design systems",
-      "Automotive",
+      "Regulated & partner constraints",
       "Completion rate improvement",
-      "Executive presentation",
+      "Leadership-facing delivery",
     ],
   },
   "Cazador del Oso: multimedia web design": {
     recruiter: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Visual storytelling",
       "Content strategy",
       "Brand identity",
       "Information architecture",
       "Front-end development",
-      "Ecommerce",
+      "Commerce & conversion",
       "Client management",
       "End-to-end delivery",
     ],
     designer: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Visual storytelling",
       "Brand identity",
       "Content strategy",
@@ -147,7 +146,7 @@ const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
   },
   "SRP tile redesign": {
     designer: [
-      "AI-assisted design & critique",
+      "AI prototyping",
       "Component design",
       "Information hierarchy",
       "A/B testing",
@@ -156,12 +155,117 @@ const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
       "Heuristic evaluation",
       "Design systems",
       "Analytics",
+      "Regulated & partner constraints",
     ],
   },
 };
 
+// Parent-level capability chips listed first in the fit picker; remaining
+// case-study tags follow (still behind “+N” via FIT_PILL_MAX).
+const DEFAULT_CAPABILITY_CHIPS: Record<Exclude<Lens, "jane">, readonly string[]> =
+  {
+    recruiter: [
+      "AI prototyping",
+      "UX & product design",
+      "Information architecture",
+      "Design systems",
+      "Stakeholder alignment",
+      "User research",
+    ],
+    designer: [
+      "AI prototyping",
+      "Systems thinking",
+      "Design systems",
+      "Information architecture",
+      "Brand identity",
+      "Usability testing",
+    ],
+  };
+
+// Case study titles in page order per lens (matches PROJECTS / DESIGNER_PROJECTS).
+const FIT_CASE_ORDER: Record<Exclude<Lens, "jane">, readonly string[]> = {
+  recruiter: [
+    "Powersports site overhaul",
+    "Credit application redesign",
+    "Cazador del Oso: multimedia web design",
+  ],
+  designer: [
+    "Cazador del Oso: multimedia web design",
+    "Powersports site overhaul",
+    "SRP tile redesign",
+  ],
+};
+
+function expandedTagsForLens(lens: Exclude<Lens, "jane">): string[] {
+  const defaults = new Set(DEFAULT_CAPABILITY_CHIPS[lens]);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const title of FIT_CASE_ORDER[lens]) {
+    const tags = CASE_STUDY_TAGS[title]?.[lens];
+    if (!tags) continue;
+    for (const tag of tags) {
+      if (defaults.has(tag) || seen.has(tag)) continue;
+      seen.add(tag);
+      out.push(tag);
+    }
+  }
+  return out;
+}
+
+function defaultTagsForLens(lens: Exclude<Lens, "jane">): string[] {
+  return [...DEFAULT_CAPABILITY_CHIPS[lens], ...expandedTagsForLens(lens)];
+}
+
+/** How many case studies (for this lens) share at least one selected tag. */
+function caseStudyOverlapStats(
+  lens: Exclude<Lens, "jane">,
+  selected: Set<string>,
+): { count: number; total: number } {
+  let total = 0;
+  let count = 0;
+  for (const title of FIT_CASE_ORDER[lens]) {
+    const tags = CASE_STUDY_TAGS[title]?.[lens];
+    if (!tags?.length) continue;
+    total++;
+    if (tags.some((t) => selected.has(t))) count++;
+  }
+  return { count, total };
+}
+
+/** Case with the most overlapping picks; ties break by page order. */
+function readingStartRecommendation(
+  lens: Exclude<Lens, "jane">,
+  selected: Set<string>,
+): { title: string; overlapSkills: number } | null {
+  if (selected.size === 0) return null;
+  const titles = FIT_CASE_ORDER[lens];
+  let bestTitle: string | null = null;
+  let bestOverlap = 0;
+  let bestIndex = titles.length;
+  for (let index = 0; index < titles.length; index++) {
+    const title = titles[index];
+    const tags = CASE_STUDY_TAGS[title]?.[lens];
+    if (!tags?.length) continue;
+    let overlapSkills = 0;
+    selected.forEach((s) => {
+      if (tags.includes(s)) overlapSkills++;
+    });
+    if (overlapSkills === 0) continue;
+    if (
+      overlapSkills > bestOverlap ||
+      (overlapSkills === bestOverlap && index < bestIndex)
+    ) {
+      bestOverlap = overlapSkills;
+      bestTitle = title;
+      bestIndex = index;
+    }
+  }
+  if (bestTitle === null) return null;
+  return { title: bestTitle, overlapSkills: bestOverlap };
+}
+
 // Master vocabulary of every skill/tool/domain the fit section can surface.
-// `weight` drives the match %. `aliases` are fuzzy-match hooks so typing
+// `weight` drives the “core craft %” readout. `aliases` are fuzzy-match hooks so typing
 // "IA" or "React" lands on the canonical tag. Aliases are intentionally broad
 // (synonyms, tools, acronyms, common recruiter terms) so more queries surface
 // the right pill. Every tag referenced in CASE_STUDY_TAGS is guaranteed to
@@ -309,8 +413,8 @@ const SKILL_VOCAB: SkillEntry[] = [
   { name: "Conditional logic design", weight: 0.9, aliases: ["conditional logic", "branching", "if-then", "form logic", "show hide logic"] },
   { name: "Client management", weight: 0.9, aliases: ["client comms", "client relationships", "account", "stakeholder clients"] },
   { name: "End-to-end delivery", weight: 0.9, aliases: ["e2e", "end to end", "shipping", "delivery", "launch"] },
-  { name: "Executive presentation", weight: 0.9, aliases: ["exec pres", "leadership pres", "exec deck", "C-suite", "board deck", "presentations", "QBR", "narrative"] },
-  { name: "KPI improvement", weight: 0.9, aliases: ["KPIs", "metrics", "KPI", "OKRs", "results", "targets", "analytics outcomes"] },
+  { name: "Leadership-facing delivery", weight: 0.9, aliases: ["executive presentation", "Executive presentation", "exec pres", "leadership pres", "exec deck", "C-suite", "board deck", "presentations", "QBR", "narrative"] },
+  { name: "Outcomes & metrics", weight: 0.9, aliases: ["KPI improvement", "kpi improvement", "KPIs", "metrics", "KPI", "OKRs", "results", "targets", "analytics outcomes"] },
   { name: "Revenue impact", weight: 0.9, aliases: ["revenue", "P&L", "growth", "ROAS", "revenue design"] },
   {
     name: "Completion rate improvement",
@@ -576,9 +680,12 @@ const SKILL_VOCAB: SkillEntry[] = [
     ],
   },
   {
-    name: "AI-assisted design & critique",
+    name: "AI prototyping",
     weight: 0.85,
     aliases: [
+      "AI-assisted design & critique",
+      "AI-assisted design",
+      "ai-assisted design",
       "AI",
       "artificial intelligence",
       "gen AI",
@@ -594,7 +701,6 @@ const SKILL_VOCAB: SkillEntry[] = [
       "prompting",
       "prompt engineering",
       "AI tools",
-      "AI prototyping",
       "AI research",
       "machine learning",
     ],
@@ -663,20 +769,51 @@ const SKILL_VOCAB: SkillEntry[] = [
     ],
   },
   {
-    name: "Ecommerce",
+    name: "Commerce & conversion",
     weight: 0.8,
-    aliases: ["e-commerce", "shopify", "commerce", "checkout", "cart", "PDP", "PLP", "D2C", "B2B ecommerce"],
+    aliases: [
+      "ecommerce",
+      "e-commerce",
+      "Ecommerce",
+      "commerce",
+      "shopify",
+      "checkout",
+      "cart",
+      "PDP",
+      "PLP",
+      "D2C",
+      "B2B ecommerce",
+      "online retail",
+      "merchandising",
+    ],
   },
   { name: "Style guide creation", weight: 0.8, aliases: ["style guide"] },
   { name: "Omnichannel", weight: 0.8, aliases: ["omni", "omni channel", "multichannel", "cross-channel", "BOPIS"] },
-  { name: "OEM compliance", weight: 0.8, aliases: ["OEM"] },
+  {
+    name: "Regulated & partner constraints",
+    weight: 0.8,
+    aliases: [
+      "automotive",
+      "Automotive",
+      "auto",
+      "car",
+      "dealership",
+      "vehicles",
+      "powersports",
+      "OEM",
+      "oem compliance",
+      "OEM compliance",
+      "manufacturer rules",
+      "brand compliance",
+      "regulated industry",
+    ],
+  },
   {
     name: "CMS constraints",
     weight: 0.8,
     aliases: ["CMS", "Webflow", "WordPress", "Contentful"],
   },
   { name: "Sole ownership", weight: 0.8, aliases: ["solo delivery", "solo"] },
-  { name: "Automotive", weight: 0.8, aliases: ["auto", "car", "dealership", "OEM", "vehicles", "powersports", "automotive"] },
 
   // SRP-tile specific
   {
@@ -751,25 +888,6 @@ const SKILL_VOCAB: SkillEntry[] = [
   },
 ];
 
-// Case studies appear in the order they render on the page — use that order
-// as the stable source when building the default tag list so the pills read
-// left-to-right as you scroll down.
-function defaultTagsForLens(lens: Lens): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const title of Object.keys(CASE_STUDY_TAGS)) {
-    const tags = CASE_STUDY_TAGS[title][lens];
-    if (!tags) continue;
-    for (const tag of tags) {
-      if (seen.has(tag)) continue;
-      seen.add(tag);
-      out.push(tag);
-    }
-  }
-  const fitAnchor = "AI-assisted design & critique";
-  return [fitAnchor].concat(out.filter((t) => t !== fitAnchor));
-}
-
 function weightOf(name: string): number {
   return SKILL_VOCAB.find((s) => s.name === name)?.weight ?? 0;
 }
@@ -801,7 +919,7 @@ function findSkill(query: string): SkillEntry[] {
 // Case-study cards use shorter copy than SKILL_VOCAB names — map to canonical
 // labels so intersection with fit `selected` (always canonical) works.
 const PROJECT_PILL_NORMALIZATION: Record<string, string> = {
-  "ai-assisted design": "AI-assisted design & critique",
+  "ai-assisted design": "AI prototyping",
   "ux design": "UX & product design",
   "ui design": "UI & visual design",
   "visual design": "UI & visual design",
@@ -811,7 +929,7 @@ const PROJECT_PILL_NORMALIZATION: Record<string, string> = {
   "front-end collab": "Front-end development",
   qa: "Design ops",
   photography: "Illustration",
-  merchandising: "Ecommerce",
+  merchandising: "Commerce & conversion",
 };
 
 function normalizeProjectPillToCanonical(raw: string): string | null {
@@ -1023,7 +1141,7 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       "Layout & grid systems",
       "Responsive design",
       "Micro-interactions",
-      "Ecommerce",
+      "Commerce & conversion",
     ],
     challenge:
       "ZFunk Productions poured a decade of work in Cazador Del Oso—a story of Montana’s history shown through original compositions and visual art—but the website did not stack up due to a lack of branding, paragraphs of content, and overall readability issues. We needed to tell the story clearly enough to sell gala tickets, products, and to get donations all while keeping the artist’s vision and passion at the heart. A blank canvas sounds like freedom. In practice it’s the hardest brief to execute.",
@@ -1060,7 +1178,7 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       "AI-assisted design",
       "Systems thinking",
       "Information architecture",
-      "OEM compliance",
+      "Regulated & partner constraints",
       "Style guide creation",
       "Brand identity",
     ],
@@ -1120,7 +1238,7 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       "Hypothesis-driven design",
       "Cross-functional collaboration",
       "Design-to-dev handoff",
-      "Automotive",
+      "Regulated & partner constraints",
     ],
     challenge:
       "Two weeks into a new role I was handed the redesign of the search results tile: the component carrying almost all traffic on a nationwide automotive ecommerce platform. In the current state there were a few major issues — users couldn’t tell where the car was located, the stock number meant nothing to them, and the layout wasn’t surfacing what mattered most. On such a small but impactful component we had to balance what users wanted with what pushed business KPIs.",
@@ -1825,9 +1943,9 @@ function ContactFooter({ lens }: { lens: Lens }) {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// FitSection — "Am I the right fit?" band. Lens-aware: default pills are the
-// union of case-study tags for the active lens. Typing consults SKILL_VOCAB
-// via findSkill so aliases ("IA", "React") also surface canonical pills.
+// FitSection — "Am I the right fit?" band. Default pills: capability chips,
+// then remaining case-study tags for the lens. Typing uses SKILL_VOCAB via
+// findSkill.
 // ───────────────────────────────────────────────────────────────────────────
 
 const FIT_PILL_MAX = 7;
@@ -1893,7 +2011,7 @@ function FitSection({
     }
   }, [visibleSkills.length]);
 
-  const matchPct = useMemo(() => {
+  const craftPct = useMemo(() => {
     if (selected.size === 0) return 0;
     let sum = 0;
     selected.forEach((s) => {
@@ -1902,33 +2020,36 @@ function FitSection({
     return Math.round((sum / selected.size) * 100);
   }, [selected]);
 
-  const matchCopy = useMemo(() => {
+  const caseStats = useMemo(
+    () => caseStudyOverlapStats(lens, selected),
+    [lens, selected],
+  );
+
+  const startReading = useMemo(
+    () => readingStartRecommendation(lens, selected),
+    [lens, selected],
+  );
+
+  const craftHint = useMemo(() => {
     if (selected.size === 0) return "";
     const designer = lens === "designer";
-    if (matchPct >= 95) {
+    if (craftPct >= 90) {
       return designer
-        ? "Dangerously aligned: she’ll probably want to nerd out about all of this."
-        : "This list matches what she actually ships: strong overlap.";
+        ? "Weighted toward core craft she lists as tier-one strengths."
+        : "Weighted toward core craft listed as tier-one in her toolkit.";
     }
-    if (matchPct >= 85) {
+    if (craftPct >= 75) {
       return designer
-        ? "Solid overlap: a couple picks are stretch-goal territory."
-        : "Solid overlap: what you picked lines up with how she actually works.";
-    }
-    if (matchPct >= 70) {
-      return designer
-        ? "Mixed bag on craft: some core hits, some vibes and curiosity."
-        : "Strong overlap where it counts: plenty to build on.";
+        ? "Mix of core craft and stretch tags — still plenty of signal."
+        : "Mix of core and stretch tags — still a clear picture.";
     }
     return designer
-      ? "Chaos selection: bold picks. Conversation could go anywhere fun."
-      : "Wide mix: she’d bring a unique perspective to your team, not a bland keyword stack.";
-  }, [selected.size, matchPct, lens]);
+      ? "Includes more specialized picks — still useful for where her depth runs."
+      : "Includes more specialized picks — worth comparing to the cases below.";
+  }, [craftPct, lens, selected.size]);
 
-  // The banner in the Figma spec is a single consistent style (lighter pink on
-  // pink, rounded, soft shadow). We only change the leading glyph to reflect
-  // confidence: ✔ for strong matches, ⚠ when it starts to slip.
-  const matchIcon = matchPct >= 80 ? "✔️" : "⚠️";
+  // ✔ when the weighted craft score sits in the upper band.
+  const craftIcon = craftPct >= 80 ? "✔️" : "⚠️";
 
   function toggleSkill(skill: string) {
     setSelected((prev) => {
@@ -1973,8 +2094,8 @@ function FitSection({
                 Am I the right fit?
               </h2>
               <p className="text-[24px] leading-snug max-md:mt-0 md:mt-3 md:text-[20px]">
-                Select the skills below or type in something specific and see how
-                Chaela stacks up.
+                Pick capabilities you care about — see where they show up in the
+                work below, or search for something specific.
               </p>
             </div>
           ) : (
@@ -1983,8 +2104,8 @@ function FitSection({
                 Am I the right fit?
               </h2>
               <p className="mt-3 text-[18px] leading-snug md:text-[20px]">
-                Select the skills below or type in something specific and see how
-                Chaela stacks up.
+                Pick capabilities you care about — see where they show up in the work
+                below, or search for something specific.
               </p>
             </>
           )}
@@ -1995,7 +2116,7 @@ function FitSection({
                 ? "mt-10 flex max-md:items-center max-md:gap-2.5 max-md:px-6 max-md:py-2.5 items-center gap-3 border-2 border-ink bg-hwite px-5 py-3 focus-within:shadow-[3px_3px_0_0_#0f0000] md:mt-8"
                 : "mt-8 flex items-center gap-3 border-2 border-ink bg-hwite px-5 py-3 focus-within:shadow-[3px_3px_0_0_#0f0000]"
             }
-            aria-label="Search skills"
+            aria-label="Search capabilities"
           >
             <SearchIcon />
             <input
@@ -2024,7 +2145,7 @@ function FitSection({
           <div
             className="mt-8 flex flex-wrap content-start items-start gap-2"
             role="group"
-            aria-label="Skills"
+            aria-label="Capabilities"
           >
             <AnimatePresence initial={false}>
               {skillsToShow.map((skill) => {
@@ -2063,8 +2184,8 @@ function FitSection({
                 aria-expanded={pillsExpanded}
                 aria-label={
                   pillsExpanded
-                    ? "Show fewer skills"
-                    : `Show ${morePillCount} additional skills`
+                    ? "Show fewer capabilities"
+                    : `Show ${morePillCount} additional capabilities`
                 }
                 className={`${skillPillBase} relative inline-flex shrink-0 items-center justify-center bg-transparent text-ink outline-none transition hover:ring-1 hover:ring-inset hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite`}
               >
@@ -2141,38 +2262,91 @@ function FitSection({
                     : "max-w-[320px] text-[20px] leading-[1.35] text-ink/85 md:text-[24px]"
                 }
               >
-                Select skills to see how Chaela stacks up against what
-                you&rsquo;re looking for.
+                Select capabilities to see where they land in the case studies
+                below.
               </p>
             ) : (
-              <>
+              <div
+                className={
+                  isDesignerFit
+                    ? "flex max-w-[340px] flex-col items-center gap-4 text-center text-ink"
+                    : "flex max-w-[340px] flex-col items-center gap-4 text-center text-ink"
+                }
+              >
                 <p
                   className={
                     isDesignerFit
-                      ? "flex items-center justify-center gap-3 text-[32px] font-bold leading-none text-ink md:text-[48px]"
-                      : "flex items-center justify-center gap-3 text-[36px] font-bold leading-none text-ink md:text-[48px]"
+                      ? "text-[28px] font-bold leading-[1.15] md:text-[36px]"
+                      : "text-[26px] font-bold leading-[1.15] md:text-[36px]"
                   }
                 >
-                  <span aria-hidden>{matchIcon}</span>
+                  Touches{" "}
                   <motion.span
-                    key={matchPct}
+                    key={caseStats.count}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: EASE_OUT_CUBIC }}
+                    className="tabular-nums"
+                  >
+                    {caseStats.count}
+                  </motion.span>{" "}
+                  of {caseStats.total} case studies
+                </p>
+                <p
+                  className={
+                    isDesignerFit
+                      ? "flex items-center justify-center gap-2 text-[24px] font-semibold leading-none md:text-[28px]"
+                      : "flex items-center justify-center gap-2 text-[22px] font-semibold leading-none md:text-[26px]"
+                  }
+                >
+                  <span aria-hidden>{craftIcon}</span>
+                  <motion.span
+                    key={craftPct}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, ease: EASE_OUT_CUBIC }}
                   >
-                    {matchPct}% Match
+                    Core craft · {craftPct}%
                   </motion.span>
                 </p>
                 <p
                   className={
                     isDesignerFit
-                      ? "mt-4 max-w-[320px] text-[24px] leading-normal text-ink md:mt-4 md:text-[32px] md:leading-[1.15]"
-                      : "mt-4 max-w-[320px] text-[22px] leading-[1.15] text-ink md:text-[32px]"
+                      ? "max-w-[320px] text-[18px] leading-snug text-ink/85 md:text-[22px]"
+                      : "max-w-[320px] text-[17px] leading-snug text-ink/85 md:text-[20px]"
                   }
                 >
-                  {matchCopy}
+                  {craftHint}
                 </p>
-              </>
+                {caseStats.count === 0 ? (
+                  <p
+                    className={
+                      isDesignerFit
+                        ? "max-w-[320px] text-[18px] leading-snug text-ink md:text-[22px]"
+                        : "max-w-[320px] text-[17px] leading-snug text-ink md:text-[20px]"
+                    }
+                  >
+                    These picks don&rsquo;t map to the tagged case studies below
+                    yet — browse the work or try broader capabilities.
+                  </p>
+                ) : startReading ? (
+                  <p
+                    className={
+                      isDesignerFit
+                        ? "max-w-[320px] text-[18px] leading-snug text-ink md:text-[22px]"
+                        : "max-w-[320px] text-[17px] leading-snug text-ink md:text-[20px]"
+                    }
+                  >
+                    <span className="font-semibold">Start with </span>
+                    {startReading.title}
+                    <span className="text-ink/85">
+                      {" "}
+                      — {startReading.overlapSkills} of your picks show up
+                      there.
+                    </span>
+                  </p>
+                ) : null}
+              </div>
             )}
           </motion.div>
         </div>

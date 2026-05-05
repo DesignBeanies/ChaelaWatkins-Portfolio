@@ -33,9 +33,15 @@ const hrefNeedle =
     ? "/_next/static/css/"
     : `${basePath}/_next/static/css/`;
 
-if (!configSrc.includes('process.argv.includes("build")')) {
+const hasArgvBuildGate = configSrc.includes(
+  'process.argv.includes("build")',
+);
+const hasPhaseBuildGate =
+  configSrc.includes("PHASE_PRODUCTION_BUILD") &&
+  configSrc.includes("isProductionBuild");
+if (!hasArgvBuildGate && !hasPhaseBuildGate) {
   fail(
-    'next.config.mjs must gate output: "export" with process.argv.includes("build") — not NODE_ENV alone — or dev CSS may break.',
+    'next.config.mjs must gate output: "export" to production build only (e.g. process.argv.includes("build") or phase === PHASE_PRODUCTION_BUILD) — not NODE_ENV alone — or dev CSS may break.',
   );
 }
 
