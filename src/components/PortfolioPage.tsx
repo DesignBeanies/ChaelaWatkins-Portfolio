@@ -1124,7 +1124,8 @@ const PROJECTS: Project[] = [
   },
   {
     title: "Cazador del Oso: multimedia web design",
-    subtitle: "Multi-revenue streams unified | End-to-end solo delivery",
+    subtitle:
+      "Storytelling ecommerce | $14K+ revenue | End-to-end solo delivery",
     skills: [
       "User Experience (UX) Design",
       "Design Systems",
@@ -1146,11 +1147,11 @@ const PROJECTS: Project[] = [
       "Merchandising",
     ],
     challenge:
-      "An independent creator with several revenue streams — a podcast, a newsletter, consulting, and a small merch shop — had no single place to send people. Each platform had its own logic and its own audience, and their existing “link in bio” page was a dead end.",
+      "ZFunk Productions poured a decade of work in Cazador Del Oso—a story of Montana’s history shown through original compositions and visual art—but the website did not stack up due to a lack of branding, paragraphs of content, and overall readability issues. We needed to tell the story clearly enough to sell gala tickets, products, and to get donations all while keeping the artist’s vision and passion at the heart. A blank canvas sounds like freedom. In practice it’s the hardest brief to execute.",
     approach:
-      "I treated the site as a product, not a landing page. Mapped every audience path, prioritized the revenue streams against expected traffic, and built an information architecture that respected the creator’s personality without sacrificing clarity. Every choice was made to ladder up to a single goal: make it easy to move from curiosity to action.",
+      "I started with competitive and comparative research, a full audit of the original site, and stakeholder workshops so we could align on narrative, content, and hierarchy before visual design. Art direction came from the work itself: a moodier palette drawn from the main piece instead of default western-earth tones. On build, every ambitious layout choice had a technical conversation underneath it: what the CMS allows, what custom CSS can carry, and what still has to hold up across devices.",
     solution:
-      "A modular, multimedia-rich site that unified every channel behind a single brand — built end-to-end solo, from discovery through launch. The shop, podcast, and newsletter live together as equal citizens, and the design scales as new offers get added.",
+      "A storytelling-driven ecommerce site that weaves art, music, and narrative into a single cohesive website experience. Delivered end-to-end as sole designer and developer, helping ZFunk Productions’ Cazador del Oso generate over $14K in revenue.",
     images: {
       hero: publicPath("/projects/cdo-hero.png"),
       before: publicPath("/projects/cdo-before.png"),
