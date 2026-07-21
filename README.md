@@ -42,6 +42,8 @@ Colors from the Figma file are exposed as Tailwind theme colors in `tailwind.con
 - `farmersmarket` (#9cc581), `millennial` (#ffb5b6)
 - `salmon` (#f76e6e), `goldenhour` (#e98142)
 
+Typography tokens (`typeSection`, `typeBody`, etc.) live in `src/lib/typography.ts`. See **[docs/typography.md](docs/typography.md)** for the full scale, hierarchy rules, and how to add case studies.
+
 ## Scripts
 
 ```bash

@@ -1,10 +1,37 @@
 "use client";
 
-import React, { useEffect, useId, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { publicPath } from "@/lib/publicPath";
+import {
+  typeBody,
+  typeCardTitle,
+  typeCtaMd,
+  typeCtaSm,
+  typeCtaXs,
+  typeDecorativeGlyph,
+  typeDisplay,
+  typeIconClose,
+  typeIconSm,
+  typeIntro,
+  typeLead,
+  typeMeta,
+  typePill,
+  typeSection,
+  typeSectionScroll,
+  typeSubsection,
+  typeUiLabel,
+} from "@/lib/typography";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Lens model
@@ -67,974 +94,147 @@ const LENSES: Record<Lens, LensMeta> = {
   },
 };
 
-// ───────────────────────────────────────────────────────────────────────────
-// Fit-section data: case-study tag sets (per lens) + master skill vocabulary
-// ───────────────────────────────────────────────────────────────────────────
+type ContentView = "hub" | "full" | "caseStudy";
 
-// Tags curated per (case study × lens). Used to expand the fit picker beyond
-// default capability chips and to score which case studies light up.
-const CASE_STUDY_TAGS: Record<string, Partial<Record<Lens, string[]>>> = {
-  "Powersports site overhaul": {
-    recruiter: [
-      "User Experience (UX) Design",
-      "Design Systems",
-      "Figma",
-      "Prototyping",
-      "Usability Testing",
-      "Cross-functional Collaboration",
-      "AI prototyping",
-      "Product strategy",
-      "Information Architecture",
-      "Brand identity",
-      "Stakeholder alignment",
-      "Commerce & conversion",
-      "Outcomes & metrics",
-      "Workshop facilitation",
-      "Regulated & partner constraints",
-    ],
-    designer: [
-      "Systems Thinking",
-      "Information Architecture",
-      "Interaction Design",
-      "Research Synthesis",
-      "Storytelling",
-      "Accessibility (WCAG/ADA)",
-      "AI prototyping",
-      "Design Systems",
-      "Regulated & partner constraints",
-      "Brand identity",
-      "Workshop facilitation",
-      "Omnichannel",
-      "Stakeholder alignment",
-      "Style guide creation",
-    ],
-    jane: [
-      "User Experience (UX) Design",
-      "Design Systems",
-      "Information Architecture",
-      "Storytelling",
-      "AI prototyping",
-      "Brand identity",
-      "Commerce & conversion",
-      "Stakeholder alignment",
-      "Revenue impact",
-    ],
-  },
-  "Credit application redesign": {
-    recruiter: [
-      "User Experience (UX) Design",
-      "Design Systems",
-      "Figma",
-      "Prototyping",
-      "Usability Testing",
-      "Cross-functional Collaboration",
-      "AI prototyping",
-      "Information Architecture",
-      "Form design",
-      "Conditional logic design",
-      "Regulated & partner constraints",
-      "Completion rate improvement",
-      "Leadership-facing delivery",
-    ],
-  },
-  "Cazador del Oso: multimedia web design": {
-    recruiter: [
-      "User Experience (UX) Design",
-      "Design Systems",
-      "Figma",
-      "Prototyping",
-      "Usability Testing",
-      "Cross-functional Collaboration",
-      "AI prototyping",
-      "Storytelling",
-      "Content strategy",
-      "Brand identity",
-      "Information Architecture",
-      "Front-end development",
-      "Commerce & conversion",
-      "Client management",
-      "End-to-end delivery",
-    ],
-    designer: [
-      "Systems Thinking",
-      "Information Architecture",
-      "Interaction Design",
-      "Research Synthesis",
-      "Storytelling",
-      "Accessibility (WCAG/ADA)",
-      "AI prototyping",
-      "Brand identity",
-      "Content strategy",
-      "Client management",
-      "Front-end development",
-      "CMS constraints",
-      "End-to-end delivery",
-      "Sole ownership",
-    ],
-  },
-  "SRP tile redesign": {
-    designer: [
-      "Systems Thinking",
-      "Information Architecture",
-      "Interaction Design",
-      "Research Synthesis",
-      "Storytelling",
-      "Accessibility (WCAG/ADA)",
-      "AI prototyping",
-      "Component design",
-      "Information hierarchy",
-      "A/B testing",
-      "Responsive design",
-      "Usability Testing",
-      "Heuristic evaluation",
-      "Design Systems",
-      "Analytics",
-      "Regulated & partner constraints",
-    ],
-  },
+type DrawerSnapshot = {
+  lens: Lens | null;
+  contentView: ContentView;
+  /** Hub→full: curtain line sits below the hub block, not at the hero. */
+  anchor?: "hero" | "belowHub";
 };
 
-// Parent-level capability chips listed first in the fit picker; remaining
-// case-study tags follow (still behind “+N” via FIT_PILL_MAX).
-const DEFAULT_CAPABILITY_CHIPS: Record<Exclude<Lens, "jane">, readonly string[]> =
-  {
-    recruiter: [
-      "User Experience (UX) Design",
-      "Design Systems",
-      "Figma",
-      "Prototyping",
-      "Usability Testing",
-      "Cross-functional Collaboration",
-    ],
-    designer: [
-      "Systems Thinking",
-      "Information Architecture",
-      "Interaction Design",
-      "Research Synthesis",
-      "Storytelling",
-      "Accessibility (WCAG/ADA)",
-    ],
-  };
-
-// Case study titles in page order per lens (matches PROJECTS / DESIGNER_PROJECTS).
-const FIT_CASE_ORDER: Record<Exclude<Lens, "jane">, readonly string[]> = {
-  recruiter: [
-    "Powersports site overhaul",
-    "Credit application redesign",
-    "Cazador del Oso: multimedia web design",
-  ],
-  designer: [
-    "Cazador del Oso: multimedia web design",
-    "Powersports site overhaul",
-    "SRP tile redesign",
-  ],
-};
-
-function expandedTagsForLens(lens: Exclude<Lens, "jane">): string[] {
-  const defaults = new Set(DEFAULT_CAPABILITY_CHIPS[lens]);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const title of FIT_CASE_ORDER[lens]) {
-    const tags = CASE_STUDY_TAGS[title]?.[lens];
-    if (!tags) continue;
-    for (const tag of tags) {
-      if (defaults.has(tag) || seen.has(tag)) continue;
-      seen.add(tag);
-      out.push(tag);
-    }
-  }
-  return out;
+function caseStudyId(title: string): string {
+  return `case-study-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")}`;
 }
 
-function defaultTagsForLens(lens: Exclude<Lens, "jane">): string[] {
-  return [...DEFAULT_CAPABILITY_CHIPS[lens], ...expandedTagsForLens(lens)];
+function firstCaseStudySectionId(lens: Exclude<Lens, "jane">): string {
+  const title =
+    lens === "recruiter" ? PROJECTS[0].title : DESIGNER_PROJECTS[0].title;
+  return caseStudyId(title);
 }
 
-/** How many case studies (for this lens) share at least one selected tag. */
-function caseStudyOverlapStats(
-  lens: Exclude<Lens, "jane">,
-  selected: Set<string>,
-): { count: number; total: number } {
-  let total = 0;
-  let count = 0;
-  for (const title of FIT_CASE_ORDER[lens]) {
-    const tags = CASE_STUDY_TAGS[title]?.[lens];
-    if (!tags?.length) continue;
-    total++;
-    if (tags.some((t) => selected.has(t))) count++;
-  }
-  return { count, total };
+function scrollToSectionHeading(id: string, smooth: boolean): boolean {
+  const el = document.getElementById(id);
+  if (!el) return false;
+
+  const scrollMarginTop =
+    parseFloat(window.getComputedStyle(el).scrollMarginTop) || 0;
+  const top =
+    window.scrollY + el.getBoundingClientRect().top - scrollMarginTop;
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    left: 0,
+    behavior: smooth ? "smooth" : "auto",
+  });
+  return true;
 }
 
-// Master vocabulary of every skill/tool/domain the fit section can surface.
-// `weight` drives fit-banner tier bands (average selected skill weight). `aliases` are fuzzy-match hooks so typing
-// "IA" or "React" lands on the canonical tag. Aliases are intentionally broad
-// (synonyms, tools, acronyms, common recruiter terms) so more queries surface
-// the right pill. Every tag referenced in CASE_STUDY_TAGS is guaranteed to
-// appear here.
-type SkillEntry = { name: string; weight: number; aliases?: string[] };
+/** Scrolls to this section's heading when hub navigation targets its id. */
+function SectionScrollAnchor({
+  id,
+  scrollTarget,
+  onComplete,
+}: {
+  id: string;
+  scrollTarget: string | null;
+  onComplete: () => void;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
 
-const SKILL_VOCAB: SkillEntry[] = [
-  // Tier 1 — core strengths (1.0)
-  {
-    name: "Information Architecture",
-    weight: 1.0,
-    aliases: [
-      "Information architecture",
-      "IA",
-      "site architecture",
-      "info architecture",
-      "navigation",
-      "nav",
-      "sitemap",
-      "content modeling",
-      "taxonomies",
-    ],
-  },
-  {
-    name: "Interaction Design",
-    weight: 1.0,
-    aliases: [
-      "interaction design",
-      "IxD",
-      "interactive design",
-      "UI flows",
-      "states and transitions",
-    ],
-  },
-  {
-    name: "Design Systems",
-    weight: 1.0,
-    aliases: [
-      "Design systems",
-      "design systems",
-      "DS",
-      "design system",
-      "component libraries",
-      "component library",
-      "pattern library",
-    ],
-  },
-  {
-    name: "User research",
-    weight: 1.0,
-    aliases: [
-      "UXR",
-      "discovery research",
-      "research",
-      "qualitative research",
-      "user insights",
-      "ethnography",
-    ],
-  },
-  {
-    name: "Research Synthesis",
-    weight: 1.0,
-    aliases: [
-      "Research synthesis",
-      "research synthesis",
-      "synthesis",
-      "insights synthesis",
-    ],
-  },
-  {
-    name: "Usability Testing",
-    weight: 1.0,
-    aliases: [
-      "Usability testing",
-      "usability testing",
-      "user testing",
-      "UT",
-      "moderated testing",
-      "unmoderated testing",
-      "usability",
-      "ur",
-    ],
-  },
-  {
-    name: "Prototyping",
-    weight: 1.0,
-    aliases: [
-      "prototypes",
-      "hi-fi prototyping",
-      "hi-fi",
-      "interactive prototype",
-      "clickable prototype",
-      "Figma prototype",
-    ],
-  },
-  {
-    name: "User Experience (UX) Design",
-    weight: 1.0,
-    aliases: [
-      "UX & product design",
-      "UX",
-      "product design",
-      "ux design",
-      "user experience",
-      "experience design",
-      "HCD",
-      "UCD",
-      "human centered design",
-      "digital product",
-      "end-to-end design",
-    ],
-  },
-  {
-    name: "UI & visual design",
-    weight: 1.0,
-    aliases: [
-      "UI",
-      "visual design",
-      "user interface",
-      "interface design",
-      "screen design",
-    ],
-  },
-  { name: "Brand identity", weight: 1.0, aliases: ["brand", "branding", "verbal identity", "visual identity"] },
-  {
-    name: "Storytelling",
-    weight: 1.0,
-    aliases: [
-      "storytelling",
-      "Visual storytelling",
-      "visual storytelling",
-      "narrative",
-      "story frames",
-    ],
-  },
-  { name: "Content strategy", weight: 1.0, aliases: ["copywriting", "content", "messaging", "editorial"] },
-  {
-    name: "Content design & UX writing",
-    weight: 0.6,
-    aliases: [
-      "content design",
-      "UX writing",
-      "ux writing",
-      "microcopy",
-      "in-product copy",
-      "product copy",
-      "UX content",
-    ],
-  },
+  useLayoutEffect(() => {
+    if (scrollTarget !== id) return;
 
-  // Tier 2 — solid (0.9)
-  { name: "Product strategy", weight: 0.9, aliases: ["strategy", "strategic", "positioning", "GTM", "go-to-market"] },
-  {
-    name: "Systems Thinking",
-    weight: 0.9,
-    aliases: [
-      "Systems thinking",
-      "systems",
-      "holistic",
-      "big-picture",
-      "end-to-end thinking",
-      "ecosystem",
-    ],
-  },
-  {
-    name: "Design tokens",
-    weight: 0.9,
-    aliases: ["tokens", "design token", "token systems", "semantic tokens", "token naming"],
-  },
-  {
-    name: "Platform thinking",
-    weight: 0.9,
-    aliases: [
-      "platform design",
-      "platform UX",
-      "platform strategy",
-      "multi-product",
-      "platform ecosystems",
-    ],
-  },
-  {
-    name: "Stakeholder alignment",
-    weight: 0.9,
-    aliases: [
-      "stakeholder management",
-      "stakeholder mgmt",
-      "stakeholders",
-      "stakeholder comms",
-      "pm alignment",
-      "engineering alignment",
-    ],
-  },
-  {
-    name: "Workshop facilitation",
-    weight: 0.9,
-    aliases: ["workshops", "facilitation", "co-creation", "design workshop", "alignment workshop"],
-  },
-  {
-    name: "Accessibility (WCAG/ADA)",
-    weight: 0.9,
-    aliases: [
-      "Accessibility",
-      "a11y",
-      "ADA",
-      "WCAG",
-      "508",
-      "inclusive design",
-    ],
-  },
-  { name: "Form design", weight: 0.9, aliases: ["forms", "inputs", "form UX", "form patterns", "application form"] },
-  { name: "Conditional logic design", weight: 0.9, aliases: ["conditional logic", "branching", "if-then", "form logic", "show hide logic"] },
-  { name: "Client management", weight: 0.9, aliases: ["client comms", "client relationships", "account", "stakeholder clients"] },
-  { name: "End-to-end delivery", weight: 0.9, aliases: ["e2e", "end to end", "shipping", "delivery", "launch"] },
-  { name: "Leadership-facing delivery", weight: 0.9, aliases: ["executive presentation", "Executive presentation", "exec pres", "leadership pres", "exec deck", "C-suite", "board deck", "presentations", "QBR", "narrative"] },
-  { name: "Outcomes & metrics", weight: 0.9, aliases: ["KPI improvement", "kpi improvement", "KPIs", "metrics", "KPI", "OKRs", "results", "targets", "analytics outcomes"] },
-  { name: "Revenue impact", weight: 0.9, aliases: ["revenue", "P&L", "growth", "ROAS", "revenue design"] },
-  {
-    name: "Completion rate improvement",
-    weight: 0.9,
-    aliases: ["conversion", "completion rate"],
-  },
-  { name: "Figma", weight: 1.0, aliases: ["figma", "figma file", "component sets", "auto layout", "variants", "figma design"] },
-  { name: "FigJam", weight: 0.95, aliases: ["figjam", "figma jam", "fig jam", "workshop board"] },
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-  // Senior UX craft & methodology
-  {
-    name: "Wireframing",
-    weight: 1.0,
-    aliases: ["wireframes", "lo-fi", "low-fidelity", "mid-fi", "mid-fidelity"],
-  },
-  {
-    name: "Journey mapping",
-    weight: 1.0,
-    aliases: ["customer journey", "user journey", "journey maps"],
-  },
-  { name: "Design thinking", weight: 1.0, aliases: ["double diamond", "design process", "IDEO", "HCD", "diverge converge"] },
-  {
-    name: "User interviews",
-    weight: 1.0,
-    aliases: [
-      "interviews",
-      "generative research",
-      "1:1 interviews",
-      "customer interviews",
-      "talk to users",
-    ],
-  },
-  {
-    name: "Heuristic evaluation",
-    weight: 0.9,
-    aliases: ["heuristics", "heuristic review", "cognitive load"],
-  },
-  {
-    name: "Persona development",
-    weight: 0.9,
-    aliases: ["personas", "user personas", "proto-personas"],
-  },
-  {
-    name: "Jobs to be done",
-    weight: 0.9,
-    aliases: ["JTBD", "jobs-to-be-done"],
-  },
-  {
-    name: "Design sprints",
-    weight: 0.9,
-    aliases: ["sprints", "design sprint", "GV design sprint", "5-day sprint", "Google sprint"],
-  },
-  {
-    name: "Service design",
-    weight: 0.85,
-    aliases: ["service blueprint", "service blueprints", "service blueprinting"],
-  },
-  {
-    name: "Card sorting",
-    weight: 0.85,
-    aliases: ["tree tests", "tree testing", "card sorts"],
-  },
-  {
-    name: "A/B testing",
-    weight: 0.9,
-    aliases: ["ab testing", "experimentation", "experiments", "split testing", "AB"],
-  },
-  {
-    name: "Hypothesis-driven design",
-    weight: 0.9,
-    aliases: ["hypothesis", "HDD", "hypothesis testing"],
-  },
-  {
-    name: "Analytics",
-    weight: 0.85,
-    aliases: [
-      "product analytics",
-      "Amplitude",
-      "Mixpanel",
-      "GA",
-      "Google Analytics",
-      "Pendo",
-      "Heap",
-    ],
-  },
+    let cancelled = false;
+    const timeouts: number[] = [];
 
-  // Senior UI / visual craft
-  { name: "Typography", weight: 1.0, aliases: ["type", "fonts", "type systems"] },
-  {
-    name: "Layout & grid systems",
-    weight: 1.0,
-    aliases: ["grids", "grid systems", "layout"],
-  },
-  {
-    name: "Responsive design",
-    weight: 1.0,
-    aliases: ["responsive", "mobile-first", "adaptive", "responsive web"],
-  },
-  {
-    name: "Micro-interactions",
-    weight: 1.0,
-    aliases: ["microinteractions", "micro-interactions", "UI motion"],
-  },
-  {
-    name: "Iconography",
-    weight: 0.9,
-    aliases: ["icons", "icon design"],
-  },
-  {
-    name: "Art direction",
-    weight: 0.9,
-    aliases: ["art direction", "creative direction"],
-  },
-  {
-    name: "Illustration",
-    weight: 0.85,
-    aliases: ["illustrations", "spot illustration"],
-  },
-  {
-    name: "Dark mode & theming",
-    weight: 0.85,
-    aliases: ["dark mode", "theming", "themes", "color tokens"],
-  },
-  {
-    name: "Internationalization",
-    weight: 0.7,
-    aliases: ["i18n", "localization", "L10n"],
-  },
+    const finish = (found: boolean) => {
+      if (cancelled) return;
+      if (found) {
+        document.getElementById(id)?.focus({ preventScroll: true });
+      }
+      onComplete();
+    };
 
-  // Senior product
-  {
-    name: "Product roadmapping",
-    weight: 0.6,
-    aliases: ["roadmap", "product roadmap", "roadmapping", "roadmaps"],
-  },
-  {
-    name: "Product documentation",
-    weight: 0.9,
-    aliases: [
-      "design documentation",
-      "spec documentation",
-      "product docs",
-      "design docs",
-      "documentation",
-      "specs docs",
-    ],
-  },
-  {
-    name: "OKRs",
-    weight: 0.9,
-    aliases: ["okrs", "objectives and key results", "objectives"],
-  },
-  {
-    name: "Feature prioritization",
-    weight: 0.9,
-    aliases: ["prioritization", "RICE", "ICE"],
-  },
-  {
-    name: "Cross-functional Collaboration",
-    weight: 1.0,
-    aliases: [
-      "Cross-functional collaboration",
-      "cross-functional collaboration",
-      "collaboration",
-      "collab",
-      "teamwork",
-      "cross-functional",
-      "cross functional",
-      "xfn",
-      "cross-team",
-    ],
-  },
-  {
-    name: "Design-to-dev handoff",
-    weight: 0.95,
-    aliases: [
-      "handoff",
-      "dev handoff",
-      "developer handoff",
-      "design specs",
-      "specs",
-      "engineering handoff",
-      "redlines",
-      "annotations",
-      "inspect",
-      "Zeplin",
-    ],
-  },
+    const run = (smooth: boolean) =>
+      scrollToSectionHeading(id, smooth && !prefersReducedMotion);
 
-  // Senior leadership
-  {
-    name: "Design critique",
-    weight: 0.9,
-    aliases: ["critique", "crits", "design crits"],
-  },
-  {
-    name: "Mentorship",
-    weight: 0.9,
-    aliases: [
-      "mentoring",
-      "coaching",
-      "leadership",
-      "IC leadership",
-      "org design",
-      "team leadership",
-      "design leadership",
-      "people management",
-      "manager",
-      "director",
-      "1:1s",
-    ],
-  },
-  {
-    name: "Hiring & interviewing",
-    weight: 0.85,
-    aliases: [
-      "hiring",
-      "design hiring",
-      "design interviews",
-      "interviewing",
-      "portfolio review",
-      "onsite",
-      "loop",
-    ],
-  },
+    const settle = (found: boolean) => {
+      if (cancelled) return;
+      if (!found) {
+        finish(false);
+        return;
+      }
+      if (prefersReducedMotion) {
+        finish(true);
+        return;
+      }
+      timeouts.push(
+        window.setTimeout(() => {
+          if (!cancelled) {
+            run(false);
+            finish(true);
+          }
+        }, 450),
+      );
+    };
 
-  // Tool belt (weights lean on how often Chaela reaches for each)
-  {
-    name: "Adobe Creative Suite",
-    weight: 0.85,
-    aliases: [
-      "Photoshop",
-      "Illustrator",
-      "Adobe",
-      "Creative Cloud",
-      "After Effects",
-      "AE",
-      "InDesign",
-    ],
-  },
-  { name: "Sketch", weight: 0.6, aliases: ["sketch app"] },
-  { name: "Notion", weight: 0.9, aliases: ["notion docs"] },
-  {
-    name: "Whiteboarding tools",
-    weight: 0.85,
-    aliases: ["Miro", "Mural", "FigJam boards", "whiteboarding", "whiteboard"],
-  },
-  {
-    name: "Prototyping tools",
-    weight: 0.75,
-    aliases: ["Framer", "Protopie", "Principle", "ProtoPie"],
-  },
-  { name: "Lottie", weight: 0.7, aliases: ["lottie animation"] },
-  { name: "Storybook", weight: 0.75, aliases: ["storybookjs"] },
-  {
-    name: "Research tools",
-    weight: 0.8,
-    aliases: [
-      "Dovetail",
-      "UserTesting",
-      "Maze",
-      "Lookback",
-      "Condens",
-      "UserZoom",
-    ],
-  },
-  {
-    name: "AI prototyping",
-    weight: 0.85,
-    aliases: [
-      "AI-assisted design & critique",
-      "AI-assisted design",
-      "ai-assisted design",
-      "AI",
-      "artificial intelligence",
-      "gen AI",
-      "genai",
-      "GenAI",
-      "generative AI",
-      "LLM",
-      "LLMs",
-      "ChatGPT",
-      "Claude",
-      "Copilot",
-      "Cursor",
-      "prompting",
-      "prompt engineering",
-      "AI tools",
-      "AI research",
-      "machine learning",
-    ],
-  },
-  {
-    name: "Human-AI interaction",
-    weight: 0.8,
-    aliases: [
-      "human AI interaction",
-      "human-AI interaction",
-      "human AI",
-      "HAI",
-      "human-in-the-loop",
-      "human in the loop",
-    ],
-  },
-  {
-    name: "AI UX",
-    weight: 0.8,
-    aliases: [
-      "AI product UX",
-      "AI/UX",
-      "generative UX",
-      "AI experience design",
-      "machine learning UX",
-    ],
-  },
-  {
-    name: "Conversation design & UX",
-    weight: 0.8,
-    aliases: [
-      "conversation design",
-      "conversational UX",
-      "chat UX",
-      "voice UX",
-      "dialogue design",
-      "assistant UX",
-    ],
-  },
+    const tryScroll = (attempt: number) => {
+      if (cancelled) return;
+      const smooth = attempt === 0;
+      if (run(smooth)) {
+        settle(true);
+        return;
+      }
+      if (attempt < 8) {
+        timeouts.push(
+          window.setTimeout(() => tryScroll(attempt + 1), 50 * (attempt + 1)),
+        );
+      } else {
+        finish(false);
+      }
+    };
 
-  // Tier 3 — familiar / adjacent (0.8)
-  {
-    name: "Front-end development",
-    weight: 0.8,
-    aliases: [
-      "front-end",
-      "frontend",
-      "FE",
-      "React",
-      "HTML/CSS",
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "JS",
-    ],
-  },
-  {
-    name: "Technical UX",
-    weight: 0.7,
-    aliases: [
-      "technical product design",
-      "engineering-adjacent UX",
-      "implementation-aware design",
-      "systems-aware UX",
-      "deep technical UX",
-    ],
-  },
-  {
-    name: "Commerce & conversion",
-    weight: 0.8,
-    aliases: [
-      "ecommerce",
-      "e-commerce",
-      "Ecommerce",
-      "commerce",
-      "shopify",
-      "checkout",
-      "cart",
-      "PDP",
-      "PLP",
-      "D2C",
-      "B2B ecommerce",
-      "online retail",
-      "merchandising",
-    ],
-  },
-  { name: "Style guide creation", weight: 0.8, aliases: ["style guide"] },
-  { name: "Omnichannel", weight: 0.8, aliases: ["omni", "omni channel", "multichannel", "cross-channel", "BOPIS"] },
-  {
-    name: "Regulated & partner constraints",
-    weight: 0.8,
-    aliases: [
-      "automotive",
-      "Automotive",
-      "auto",
-      "car",
-      "dealership",
-      "vehicles",
-      "powersports",
-      "OEM",
-      "oem compliance",
-      "OEM compliance",
-      "manufacturer rules",
-      "brand compliance",
-      "regulated industry",
-    ],
-  },
-  {
-    name: "CMS constraints",
-    weight: 0.8,
-    aliases: ["CMS", "Webflow", "WordPress", "Contentful"],
-  },
-  { name: "Sole ownership", weight: 0.8, aliases: ["solo delivery", "solo"] },
+    tryScroll(0);
 
-  // SRP-tile specific
-  {
-    name: "Component design",
-    weight: 1.0,
-    aliases: ["components", "component library design", "component systems"],
-  },
-  {
-    name: "Information hierarchy",
-    weight: 1.0,
-    aliases: ["content hierarchy", "visual hierarchy"],
-  },
+    return () => {
+      cancelled = true;
+      timeouts.forEach((t) => window.clearTimeout(t));
+    };
+  }, [scrollTarget, id, onComplete, prefersReducedMotion]);
 
-  // Tier 4 — growing / tool adjacency (0.6–0.7)
-  { name: "Design ops", weight: 0.7, aliases: ["designops", "DesignOps", "ops", "workflows", "intake", "triage", "governance", "rituals"] },
-  {
-    name: "Motion design",
-    weight: 0.6,
-    aliases: ["animation", "framer motion", "motion"],
-  },
-  { name: "Data viz", weight: 0.6, aliases: ["data visualization", "charts", "dashboards", "graph", "data storytelling"] },
-
-  // Enterprise / B2B SaaS — dense workflows & governance (0.7)
-  {
-    name: "Enterprise & B2B SaaS UX",
-    weight: 0.7,
-    aliases: [
-      "enterprise UX",
-      "B2B",
-      "SaaS",
-      "B2B SaaS",
-      "enterprise software",
-      "business software",
-      "B2B product",
-    ],
-  },
-  {
-    name: "Complex workflow design",
-    weight: 0.7,
-    aliases: [
-      "complex workflows",
-      "multi-step workflows",
-      "multi-step flows",
-      "workflow design",
-      "linear workflows",
-      "branching workflows",
-    ],
-  },
-  {
-    name: "Admin & dense UI UX",
-    weight: 0.7,
-    aliases: [
-      "dense admin UIs",
-      "admin UX",
-      "data-dense UI",
-      "internal tools UX",
-      "power-user UX",
-      "operations UX",
-    ],
-  },
-  {
-    name: "Permissions & audit UX",
-    weight: 0.7,
-    aliases: [
-      "permissions UX",
-      "roles and permissions",
-      "audit trails",
-      "governance UX",
-      "compliance workflows",
-      "access control UX",
-    ],
-  },
-];
-
-function weightOf(name: string): number {
-  return SKILL_VOCAB.find((s) => s.name === name)?.weight ?? 0;
-}
-
-// Simple dependency-free fuzzy lookup. Ranks by match quality over both the
-// canonical name and any aliases: exact > startsWith > substring. Returns
-// canonical entries, deduped, in rank order.
-function findSkill(query: string): SkillEntry[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const scored: Array<{ entry: SkillEntry; score: number }> = [];
-  for (const entry of SKILL_VOCAB) {
-    const candidates = [entry.name, ...(entry.aliases ?? [])].map((s) =>
-      s.toLowerCase(),
-    );
-    let best = 0;
-    for (const c of candidates) {
-      if (c === q) best = Math.max(best, 3);
-      else if (c.startsWith(q)) best = Math.max(best, 2);
-      else if (c.includes(q)) best = Math.max(best, 1);
-    }
-    if (best > 0) scored.push({ entry, score: best });
-  }
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .map((s) => s.entry);
-}
-
-// Case-study cards use shorter copy than SKILL_VOCAB names — map to canonical
-// labels so intersection with fit `selected` (always canonical) works.
-const PROJECT_PILL_NORMALIZATION: Record<string, string> = {
-  "ai-assisted design": "AI prototyping",
-  "ux design": "User Experience (UX) Design",
-  "ui design": "UI & visual design",
-  "visual design": "UI & visual design",
-  research: "User research",
-  "stakeholder mgmt": "Stakeholder alignment",
-  brand: "Brand identity",
-  "front-end collab": "Front-end development",
-  qa: "Design ops",
-  photography: "Illustration",
-  merchandising: "Commerce & conversion",
-};
-
-function normalizeProjectPillToCanonical(raw: string): string | null {
-  const t = raw.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-  const mapped = PROJECT_PILL_NORMALIZATION[lower];
-  if (mapped) return mapped;
-  for (const entry of SKILL_VOCAB) {
-    if (entry.name.toLowerCase() === lower) return entry.name;
-    for (const a of entry.aliases ?? []) {
-      if (a.toLowerCase() === lower) return entry.name;
-    }
-  }
   return null;
 }
 
-/** Intersects fit selection with a project’s pills; order follows selection order. */
-function matchedSkillsForProject(
-  selected: Set<string>,
-  skills: string[],
-  moreSkills: string[],
-): string[] {
-  if (selected.size === 0) return [];
-  const proj = new Set<string>();
-  for (const raw of [...skills, ...moreSkills]) {
-    const c = normalizeProjectPillToCanonical(raw);
-    if (c) proj.add(c);
-  }
-  const out: string[] = [];
-  selected.forEach((s) => {
-    if (proj.has(s)) out.push(s);
-  });
-  return out;
+/** Scrolls to a section heading (Jane lens — no hub). */
+function ScrollAnchor({
+  targetId,
+  onComplete,
+}: {
+  targetId: string | null;
+  onComplete: () => void;
+}) {
+  if (!targetId) return null;
+  return (
+    <SectionScrollAnchor
+      id={targetId}
+      scrollTarget={targetId}
+      onComplete={onComplete}
+    />
+  );
 }
+
+const HUB_INTRO: Record<Exclude<Lens, "jane">, string> = {
+  recruiter:
+    "Jump straight to a case study or scroll through the whole story.",
+  designer:
+    "Three projects with craft and outcomes. Pick one or wander the full page.",
+};
 
 type Project = {
   title: string;
@@ -1046,6 +246,7 @@ type Project = {
   solution: string;
   images: {
     hero: string;
+    heroMobile?: string;
     before: string;
     after: string;
   };
@@ -1188,7 +389,7 @@ type DesignerProject = {
     DesignBuildColumn,
     DesignBuildColumn,
   ];
-  images: { hero: string; before: string; after: string };
+  images: { hero: string; heroMobile?: string; before: string; after: string };
 };
 
 const DESIGNER_PROJECTS: DesignerProject[] = [
@@ -1349,24 +550,150 @@ const DESIGNER_PROJECTS: DesignerProject[] = [
       },
     ],
     images: {
-      hero: publicPath("/projects/srp-hero.png"),
+      hero: publicPath("/projects/SRPDESKTOP.svg"),
+      heroMobile: publicPath("/projects/srp-hero-mobile.png"),
       before: publicPath("/projects/srp-before.png"),
       after: publicPath("/projects/srp-after.png"),
     },
   },
 ];
 
-const EASE_OUT_CUBIC = [0.22, 1, 0.36, 1] as const;
-const CURTAIN_EASE = [0.65, 0.05, 0.3, 1] as const;
+function resolveCaseStudyMeta(
+  lens: Exclude<Lens, "jane">,
+  sectionId: string,
+): { title: string; image: string; accentFit: string; accent: Accent } | null {
+  if (lens === "recruiter") {
+    const project = PROJECTS.find((p) => caseStudyId(p.title) === sectionId);
+    if (!project) return null;
+    return {
+      title: project.title,
+      image: project.images.hero,
+      accentFit: ACCENTS.recruiter.pill,
+      accent: ACCENTS.recruiter,
+    };
+  }
 
-// The ink curtain starts fully covering the area below the hero (top edge
-// flush with the hero's 4px bottom border), holds briefly, then slides
-// straight down off the viewport revealing the variant behind it.
-const CURTAIN_HOLD_MS = 120;
-const CURTAIN_SWEEP_MS = 720;
-const CURTAIN_TOTAL_MS = CURTAIN_HOLD_MS + CURTAIN_SWEEP_MS;
+  const project = DESIGNER_PROJECTS.find(
+    (p) => caseStudyId(p.title) === sectionId,
+  );
+  if (!project) return null;
+  return {
+    title: project.title,
+    image: project.images.hero,
+    accentFit: ACCENTS.designer.pill,
+    accent: ACCENTS.designer,
+  };
+}
+
+const EASE_OUT_CUBIC = [0.22, 1, 0.36, 1] as const;
+
+function curtainTiming(anchor?: DrawerSnapshot["anchor"]) {
+  if (anchor === "belowHub") {
+    return { holdMs: 50, sweepMs: 1050 };
+  }
+  return { holdMs: 100, sweepMs: 900 };
+}
+
+function curtainTotalMs(anchor?: DrawerSnapshot["anchor"]) {
+  const { holdMs, sweepMs } = curtainTiming(anchor);
+  return holdMs + sweepMs;
+}
+
+/** Scroll-through reveal — content unfolds below the hub instead of popping in. */
+function FullPortfolioReveal({
+  revealing,
+  children,
+}: {
+  revealing: boolean;
+  children: React.ReactNode;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const { holdMs, sweepMs } = curtainTiming("belowHub");
+
+  if (prefersReducedMotion) {
+    return <>{children}</>;
+  }
+
+  return (
+    <motion.div
+      initial={
+        revealing
+          ? { clipPath: "inset(0 0 100% 0)", y: -32, opacity: 0.88 }
+          : false
+      }
+      animate={{ clipPath: "inset(0 0 0% 0)", y: 0, opacity: 1 }}
+      transition={{
+        duration: sweepMs / 1000,
+        delay: revealing ? holdMs / 1000 : 0,
+        ease: EASE_OUT_CUBIC,
+      }}
+      className="origin-top will-change-[clip-path,transform,opacity]"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Retro press CTA — matches memory-card Play button. */
+function retroCtaClasses({
+  size = "md",
+  accentClass = "",
+  variant = "accent",
+}: {
+  size?: "md" | "sm" | "xs";
+  accentClass?: string;
+  variant?: "accent" | "surface" | "ink" | "outline";
+}): string {
+  const sizeClass =
+    size === "xs"
+      ? `px-3 py-1.5 ${typeCtaXs}`
+      : size === "sm"
+        ? `px-4 py-2 md:px-5 md:py-2.5 ${typeCtaSm}`
+        : `px-8 py-2.5 ${typeCtaMd}`;
+
+  const variantClass =
+    variant === "ink"
+      ? `hover-cursor-on-dark bg-ink text-hwite ${accentClass}`
+      : variant === "outline"
+        ? `bg-hwite ${accentClass}`
+        : variant === "surface"
+          ? "bg-hwite"
+          : accentClass;
+
+  return [
+    "inline-flex items-center justify-center border-[3px] border-ink font-bold uppercase",
+    sizeClass,
+    variant === "ink" ? "" : "text-ink",
+    "shadow-[4px_4px_0_0_#0f0000] outline-none transition-[transform,colors]",
+    "hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#0f0000]",
+    "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2",
+    "disabled:cursor-not-allowed disabled:opacity-60",
+    "disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-[4px_4px_0_0_#0f0000]",
+    variantClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+// The ink curtain holds briefly, then slides down to reveal the view beneath.
+const CURTAIN_FINISH_BUFFER_MS = 48;
+
+/** Hub → case study “memory card” load screen duration. */
+const MEMORY_CARD_LOAD_MS = 2400;
+const MEMORY_CARD_BLACKOUT_MS = 550;
+const CASE_STUDY_REVEAL_MS = 1100;
+const FULL_PORTFOLIO_SCROLL_HINT_DELAY_MS = 3000;
 
 type Phase = "idle" | "animating";
+
+type CaseStudyNavMeta = {
+  label: string;
+  image?: string;
+};
+
+type PendingCaseStudy = CaseStudyNavMeta & {
+  sectionId: string;
+};
 
 // ───────────────────────────────────────────────────────────────────────────
 // Home
@@ -1374,124 +701,428 @@ type Phase = "idle" | "animating";
 
 export default function Home() {
   const [lens, setLens] = useState<Lens | null>(null);
-  /** Shared across fit band + case-study pills (recruiter/designer only). */
-  const [fitSkillSelection, setFitSkillSelection] = useState<Set<string>>(
-    () => new Set(),
+  /** Hub overview vs. full scrollable portfolio after a lens is picked. */
+  const [contentView, setContentView] = useState<ContentView>("hub");
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  const clearScrollTarget = useCallback(() => setScrollTarget(null), []);
+  const [pendingCaseStudy, setPendingCaseStudy] =
+    useState<PendingCaseStudy | null>(null);
+  const [focusedCaseStudyId, setFocusedCaseStudyId] = useState<string | null>(
+    null,
   );
-  // The view we're transitioning away from — used to render the sliding
-  // "drawer" on top of the new view during the wipe.
-  const [prevLens, setPrevLens] = useState<Lens | null>(null);
+  const [caseStudyBlackout, setCaseStudyBlackout] = useState<
+    "off" | "solid" | "fading"
+  >("off");
+  // Snapshot of the view sliding away during the hero curtain transition.
+  const [drawerSnapshot, setDrawerSnapshot] = useState<DrawerSnapshot | null>(
+    null,
+  );
   const [phase, setPhase] = useState<Phase>("idle");
+  const [scrollHintVisible, setScrollHintVisible] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
   const heroRef = useRef<HTMLElement>(null);
+  const scrollHintDismissedRef = useRef(false);
+  const scrollHintVisibleRef = useRef(false);
+  const hubSectionRef = useRef<HTMLElement>(null);
   // Viewport Y (px) for the top of the fixed curtain drawer, captured at
   // the moment the user picks a lens. First pick from the landing page may
   // be mid-scroll; switching lenses scrolls to top first so this matches
   // the hero bottom at y=0.
   const [drawerTopPx, setDrawerTopPx] = useState<number | null>(null);
+  /** Hub scroll position before opening a case study — restored on eject. */
+  const hubScrollYRef = useRef(0);
+  const curtainTimeoutRef = useRef<number | null>(null);
 
-  // Lock scroll only while the wipe is in flight so nothing jumps under the
-  // user mid-transition.
+  const finishCurtain = useCallback(() => {
+    if (curtainTimeoutRef.current !== null) {
+      window.clearTimeout(curtainTimeoutRef.current);
+      curtainTimeoutRef.current = null;
+    }
+    setPhase("idle");
+    setDrawerSnapshot(null);
+    setDrawerTopPx(null);
+  }, []);
+
+  const restoreHubScroll = useCallback(() => {
+    const y = hubScrollYRef.current;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: y, left: 0, behavior: "auto" });
+      });
+    });
+  }, []);
+
+  const runCurtainTransition = useCallback(
+    (snapshot: DrawerSnapshot, apply: () => void) => {
+      if (curtainTimeoutRef.current !== null) {
+        window.clearTimeout(curtainTimeoutRef.current);
+        curtainTimeoutRef.current = null;
+      }
+
+      if (prefersReducedMotion) {
+        apply();
+        return;
+      }
+
+      const anchorEl =
+        snapshot.anchor === "belowHub"
+          ? hubSectionRef.current
+          : heroRef.current;
+      const y = anchorEl ? anchorEl.getBoundingClientRect().bottom - 2 : 0;
+      setDrawerTopPx(y);
+      setDrawerSnapshot(snapshot);
+      apply();
+      setPhase("animating");
+      curtainTimeoutRef.current = window.setTimeout(
+        finishCurtain,
+        curtainTotalMs(snapshot.anchor) + CURTAIN_FINISH_BUFFER_MS,
+      );
+    },
+    [prefersReducedMotion, finishCurtain],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (curtainTimeoutRef.current !== null) {
+        window.clearTimeout(curtainTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Recover if a dev hot-reload drops the curtain timeout while phase stays locked.
+  useEffect(() => {
+    if (phase !== "animating") return;
+    const recovery = window.setTimeout(
+      finishCurtain,
+      curtainTotalMs(drawerSnapshot?.anchor) + 120,
+    );
+    return () => window.clearTimeout(recovery);
+  }, [phase, finishCurtain, drawerSnapshot?.anchor]);
+
+  // Lock scroll during lens curtain, memory-card load, or case-study reveal.
   useEffect(() => {
     if (typeof document === "undefined") return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = phase !== "idle" ? "hidden" : "";
+    const locked =
+      phase !== "idle" ||
+      pendingCaseStudy !== null ||
+      caseStudyBlackout !== "off";
+    document.body.style.overflow = locked ? "hidden" : "";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [phase]);
+  }, [phase, pendingCaseStudy, caseStudyBlackout]);
+
+  useEffect(() => {
+    if (caseStudyBlackout !== "fading") return;
+    const recovery = window.setTimeout(() => {
+      setCaseStudyBlackout("off");
+    }, CASE_STUDY_REVEAL_MS + 120);
+    return () => window.clearTimeout(recovery);
+  }, [caseStudyBlackout]);
+
+  function requestCaseStudy(sectionId: string, meta: CaseStudyNavMeta) {
+    if (phase !== "idle" || pendingCaseStudy) return;
+
+    hubScrollYRef.current = window.scrollY;
+
+    if (prefersReducedMotion) {
+      setContentView("caseStudy");
+      setFocusedCaseStudyId(sectionId);
+      return;
+    }
+
+    setPendingCaseStudy({ sectionId, ...meta });
+  }
+
+  const revealCaseStudy = useCallback((sectionId: string) => {
+    setCaseStudyBlackout("solid");
+    setContentView("caseStudy");
+    setFocusedCaseStudyId(sectionId);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    requestAnimationFrame(() => {
+      setPendingCaseStudy(null);
+      requestAnimationFrame(() => {
+        setCaseStudyBlackout("fading");
+      });
+    });
+  }, []);
+
+  const cancelCaseStudyLoad = useCallback(() => {
+    setPendingCaseStudy(null);
+  }, []);
+
+  const ejectCaseStudy = useCallback(() => {
+    if (prefersReducedMotion) {
+      setContentView("hub");
+      setScrollTarget(null);
+      setFocusedCaseStudyId(null);
+      setCaseStudyBlackout("off");
+      restoreHubScroll();
+      return;
+    }
+
+    setCaseStudyBlackout("solid");
+    window.setTimeout(() => {
+      setContentView("hub");
+      setScrollTarget(null);
+      setFocusedCaseStudyId(null);
+      restoreHubScroll();
+      requestAnimationFrame(() => {
+        setCaseStudyBlackout("fading");
+      });
+    }, MEMORY_CARD_BLACKOUT_MS);
+  }, [prefersReducedMotion, restoreHubScroll]);
+
+  function showFullPortfolio() {
+    if (
+      phase !== "idle" ||
+      contentView !== "hub" ||
+      lens === null ||
+      lens === "jane"
+    ) {
+      return;
+    }
+
+    runCurtainTransition(
+      { lens, contentView: "hub", anchor: "belowHub" },
+      () => {
+      setContentView("full");
+      setScrollTarget(null);
+      setFocusedCaseStudyId(null);
+      setCaseStudyBlackout("off");
+    },
+    );
+  }
 
   function requestLens(next: Lens) {
     if (phase !== "idle" || next === lens) return;
 
-    // First pick from the landing (Who are you?): keep scroll so the
-    // curtain lines up with the hero where the user is. When already in a
-    // lens and switching via the pill, go to the top so the transition
-    // always reads from a consistent place.
     const switchingFromAnotherLens = lens !== null;
     if (switchingFromAnotherLens) {
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
 
-    if (prefersReducedMotion) {
+    runCurtainTransition({ lens, contentView }, () => {
+      setContentView(next === "jane" ? "full" : "hub");
+      setScrollTarget(null);
+      setFocusedCaseStudyId(null);
+      setCaseStudyBlackout("off");
       setLens(next);
+    });
+  }
+
+  const locked =
+    phase !== "idle" ||
+    pendingCaseStudy !== null ||
+    caseStudyBlackout !== "off";
+
+  const scrollHintActive =
+    contentView === "full" &&
+    lens !== null &&
+    lens !== "jane" &&
+    phase === "idle" &&
+    pendingCaseStudy === null &&
+    caseStudyBlackout === "off";
+
+  useEffect(() => {
+    scrollHintVisibleRef.current = scrollHintVisible;
+  }, [scrollHintVisible]);
+
+  useEffect(() => {
+    if (!scrollHintActive) {
+      setScrollHintVisible(false);
+      scrollHintDismissedRef.current = false;
       return;
     }
 
-    // Anchor the curtain to the hero's on-screen bottom edge (viewport
-    // coords) — after optional scrollTo(0) when switching lenses.
-    const el = heroRef.current;
-    const y = el
-      ? el.getBoundingClientRect().bottom - 2
-      : 0;
-    setDrawerTopPx(y);
+    let timer: number | null = null;
 
-    // Swap the live view to the new lens up front. A snapshot of the old
-    // view is held in the drawer above, which then slides down and off to
-    // reveal the new view. The 2px line rides the top edge of the drawer.
-    setPrevLens(lens);
-    setLens(next);
-    setPhase("animating");
-    window.setTimeout(() => {
-      setPhase("idle");
-      setPrevLens(null);
-      setDrawerTopPx(null);
-    }, CURTAIN_TOTAL_MS + 40);
-  }
+    const clearTimer = () => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
 
-  const locked = phase !== "idle";
+    const scheduleShow = () => {
+      if (scrollHintDismissedRef.current) return;
+      clearTimer();
+      timer = window.setTimeout(() => {
+        if (!scrollHintDismissedRef.current) {
+          setScrollHintVisible(true);
+        }
+      }, FULL_PORTFOLIO_SCROLL_HINT_DELAY_MS);
+    };
+
+    const onScroll = () => {
+      if (scrollHintDismissedRef.current) return;
+
+      if (scrollHintVisibleRef.current) {
+        scrollHintDismissedRef.current = true;
+        setScrollHintVisible(false);
+        clearTimer();
+        return;
+      }
+
+      setScrollHintVisible(false);
+      scheduleShow();
+    };
+
+    setScrollHintVisible(false);
+    scheduleShow();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      clearTimer();
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [scrollHintActive]);
+
+  const scrollToFirstCaseStudy = useCallback(() => {
+    if (!lens || lens === "jane") return;
+    scrollToSectionHeading(
+      firstCaseStudySectionId(lens),
+      !prefersReducedMotion,
+    );
+    scrollHintDismissedRef.current = true;
+    setScrollHintVisible(false);
+  }, [lens, prefersReducedMotion]);
+
+  const caseStudyMeta =
+    lens &&
+    lens !== "jane" &&
+    contentView === "caseStudy" &&
+    focusedCaseStudyId
+      ? resolveCaseStudyMeta(lens, focusedCaseStudyId)
+      : null;
 
   return (
     <main className="relative min-h-screen bg-hwite text-ink selection:bg-ink selection:text-hwite">
-      <Hero
-        ref={heroRef}
-        hideBottomBorder={lens !== null}
-      />
+      {contentView !== "caseStudy" ? (
+        <Hero
+          ref={heroRef}
+          hideBottomBorder={lens !== null}
+        />
+      ) : null}
 
-      {/* Fixed pill: render after Hero so tab order matches top-to-bottom layout. */}
-      {lens !== null && (
-        <LensPill current={lens} onPick={requestLens} disabled={locked} />
-      )}
+      {/* Fixed top-right chrome — lens pill, or eject memory card in case-study focus. */}
+      {caseStudyMeta ? (
+        <RemoveMemoryCardPill
+          title={caseStudyMeta.title}
+          accent={caseStudyMeta.accent}
+          onRemove={ejectCaseStudy}
+          disabled={locked}
+        />
+      ) : lens !== null ? (
+        <LensPill
+          current={lens}
+          onPick={requestLens}
+          disabled={locked}
+        />
+      ) : null}
 
       <LensView
         lens={lens}
+        contentView={contentView}
+        focusedCaseStudyId={focusedCaseStudyId}
+        scrollTarget={scrollTarget}
+        onScrollTargetHandled={clearScrollTarget}
         onPick={requestLens}
+        onNavigate={requestCaseStudy}
+        onShowFull={showFullPortfolio}
         disabled={locked}
-        fitSkillSelection={fitSkillSelection}
-        setFitSkillSelection={setFitSkillSelection}
+        hubSectionRef={hubSectionRef}
+        fullPortfolioRevealing={
+          phase === "animating" && drawerSnapshot?.anchor === "belowHub"
+        }
       />
 
-      {/* Sliding drawer — a snapshot of the old view capped by a 2px ink
+      {/* Sliding drawer — a snapshot of the old view capped by a 3px ink
           line, translating straight down to reveal the new view beneath.
           The drawer's top sits exactly where the hero's (now-hidden)
           bottom border used to live so the single line reads as
           continuous, not stacked or split. */}
       <AnimatePresence>
-        {phase === "animating" && drawerTopPx !== null && (
+        {phase === "animating" &&
+        drawerTopPx !== null &&
+        drawerSnapshot &&
+        drawerSnapshot.anchor !== "belowHub" ? (
           <motion.div
             key="drawer"
             aria-hidden
-            className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] overflow-hidden bg-hwite border-t-2 border-ink"
+            className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] overflow-hidden bg-hwite border-t-[3px] border-ink will-change-transform"
             style={{ top: drawerTopPx }}
             initial={{ y: 0 }}
-            animate={{ y: "calc(100% + 2px)" }}
+            animate={{ y: "calc(100% + 3px)" }}
             transition={{
-              duration: CURTAIN_SWEEP_MS / 1000,
-              delay: CURTAIN_HOLD_MS / 1000,
-              ease: CURTAIN_EASE,
+              duration: curtainTiming(drawerSnapshot.anchor).sweepMs / 1000,
+              delay: curtainTiming(drawerSnapshot.anchor).holdMs / 1000,
+              ease: EASE_OUT_CUBIC,
             }}
+            onAnimationComplete={finishCurtain}
           >
             <div className="pointer-events-none">
               <LensView
-                lens={prevLens}
+                lens={drawerSnapshot.lens}
+                contentView={drawerSnapshot.contentView}
+                focusedCaseStudyId={focusedCaseStudyId}
+                scrollTarget={null}
+                onScrollTargetHandled={() => {}}
                 onPick={() => {}}
+                onNavigate={() => {}}
+                onShowFull={() => {}}
                 disabled
-                fitSkillSelection={fitSkillSelection}
-                setFitSkillSelection={setFitSkillSelection}
               />
             </div>
           </motion.div>
-        )}
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pendingCaseStudy && lens && lens !== "jane" ? (
+          <MemoryCardLoader
+            key={pendingCaseStudy.sectionId}
+            title={pendingCaseStudy.label}
+            image={pendingCaseStudy.image}
+            accentFit={ACCENTS[lens].pill}
+            accent={ACCENTS[lens]}
+            durationMs={MEMORY_CARD_LOAD_MS}
+            onPlay={() => revealCaseStudy(pendingCaseStudy.sectionId)}
+            onDismiss={cancelCaseStudyLoad}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      {lens && lens !== "jane" ? (
+        <FullPortfolioScrollHint
+          visible={scrollHintVisible}
+          accent={ACCENTS[lens]}
+          onScrollToFirst={scrollToFirstCaseStudy}
+        />
+      ) : null}
+
+      <AnimatePresence>
+        {caseStudyBlackout !== "off" ? (
+          <motion.div
+            key="case-study-blackout"
+            aria-hidden
+            className="pointer-events-none fixed inset-0 z-[65] bg-ink"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: caseStudyBlackout === "fading" ? 0 : 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: CASE_STUDY_REVEAL_MS / 1000,
+              ease: EASE_OUT_CUBIC,
+            }}
+            onAnimationComplete={() => {
+              if (caseStudyBlackout === "fading") {
+                setCaseStudyBlackout("off");
+              }
+            }}
+          />
+        ) : null}
       </AnimatePresence>
     </main>
   );
@@ -1503,41 +1134,644 @@ export default function Home() {
 
 function LensView({
   lens,
+  contentView,
+  focusedCaseStudyId,
+  scrollTarget,
+  onScrollTargetHandled,
   onPick,
+  onNavigate,
+  onShowFull,
   disabled,
-  fitSkillSelection,
-  setFitSkillSelection,
+  hubSectionRef,
+  fullPortfolioRevealing = false,
 }: {
   lens: Lens | null;
+  contentView: ContentView;
+  focusedCaseStudyId: string | null;
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
   onPick: (lens: Lens) => void;
+  onNavigate: (sectionId: string, meta: CaseStudyNavMeta) => void;
+  onShowFull: () => void;
   disabled: boolean;
-  fitSkillSelection: Set<string>;
-  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+  hubSectionRef?: React.Ref<HTMLElement>;
+  fullPortfolioRevealing?: boolean;
 }) {
   if (lens === null) {
     return <WhoAreYouSection onPick={onPick} disabled={disabled} />;
   }
+  if (
+    contentView === "caseStudy" &&
+    lens !== "jane" &&
+    focusedCaseStudyId
+  ) {
+    return (
+      <CaseStudyFocusView
+        lens={lens}
+        sectionId={focusedCaseStudyId}
+      />
+    );
+  }
   if (lens === "recruiter")
     return (
-      <RecruiterVariant
-        fitSkillSelection={fitSkillSelection}
-        setFitSkillSelection={setFitSkillSelection}
-      />
+      <>
+        {contentView === "hub" || contentView === "full" ? (
+          <LensHub
+            ref={hubSectionRef}
+            lens="recruiter"
+            onNavigate={onNavigate}
+            onShowFull={onShowFull}
+            disabled={disabled}
+            hideScrollThrough={contentView === "full"}
+          />
+        ) : null}
+        {contentView === "full" ? (
+          <FullPortfolioReveal revealing={fullPortfolioRevealing}>
+            <RecruiterVariant
+              belowHub
+              scrollTarget={scrollTarget}
+              onScrollTargetHandled={onScrollTargetHandled}
+            />
+          </FullPortfolioReveal>
+        ) : null}
+      </>
     );
   if (lens === "designer")
     return (
-      <DesignerVariant
-        fitSkillSelection={fitSkillSelection}
-        setFitSkillSelection={setFitSkillSelection}
+      <>
+        {contentView === "hub" || contentView === "full" ? (
+          <LensHub
+            ref={hubSectionRef}
+            lens="designer"
+            onNavigate={onNavigate}
+            onShowFull={onShowFull}
+            disabled={disabled}
+            hideScrollThrough={contentView === "full"}
+          />
+        ) : null}
+        {contentView === "full" ? (
+          <FullPortfolioReveal revealing={fullPortfolioRevealing}>
+            <DesignerVariant
+              belowHub
+              scrollTarget={scrollTarget}
+              onScrollTargetHandled={onScrollTargetHandled}
+            />
+          </FullPortfolioReveal>
+        ) : null}
+      </>
+    );
+  if (lens === "jane")
+    return (
+      <JaneVariant
+        scrollTarget={scrollTarget}
+        onScrollTargetHandled={onScrollTargetHandled}
       />
     );
-  if (lens === "jane") return <JaneVariant />;
   // All three lens types are handled above; TS narrows `lens` to never here.
   return null;
 }
 
+// Per-lens accent tokens used by the case-study, hub, and contact sections.
+type Accent = {
+  pill: string;
+  divider: string;
+  buttonHoverBorder: string;
+  buttonHoverBg: string;
+  buttonHoverShadow: string;
+  /** Primary CTA hover fill — lighter lens accent (must be literal for Tailwind). */
+  emailHoverBg: string;
+};
+
+const ACCENTS: Record<Lens, Accent> = {
+  recruiter: {
+    pill: "bg-millennial",
+    divider: "bg-salmon",
+    buttonHoverBorder: "hover:border-salmon",
+    buttonHoverBg: "hover:bg-salmon",
+    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.salmon)]",
+    emailHoverBg: "hover:bg-millennial",
+  },
+  designer: {
+    pill: "bg-tear",
+    divider: "bg-coldday",
+    buttonHoverBorder: "hover:border-tear",
+    buttonHoverBg: "hover:bg-tear",
+    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.tear)]",
+    emailHoverBg: "hover:bg-tear",
+  },
+  jane: {
+    pill: "bg-sunnies",
+    divider: "bg-goldenhour",
+    buttonHoverBorder: "hover:border-goldenhour",
+    buttonHoverBg: "hover:bg-goldenhour",
+    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.goldenhour)]",
+    emailHoverBg: "hover:bg-sunnies",
+  },
+};
+
+/** White default — hover fills lighter lens accent (millennial / tear / sunnies). */
+function retroCtaOutlineHover(accent: Accent): string {
+  return `${accent.emailHoverBg} hover:text-ink`;
+}
+
+function FullPortfolioScrollHint({
+  visible,
+  accent,
+  onScrollToFirst,
+}: {
+  visible: boolean;
+  accent: Accent;
+  onScrollToFirst: () => void;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  return (
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          key="full-portfolio-scroll-hint"
+          initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 72 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 48 }}
+          transition={{
+            duration: prefersReducedMotion ? 0.2 : 0.5,
+            ease: EASE_OUT_CUBIC,
+          }}
+          className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2"
+        >
+          <motion.button
+            type="button"
+            animate={
+              prefersReducedMotion ? undefined : { y: [0, 5, 0] }
+            }
+            transition={
+              prefersReducedMotion
+                ? undefined
+                : { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+            }
+            onClick={onScrollToFirst}
+            aria-label="Scroll to first case study"
+            className={`hover-cursor-on-dark ${retroCtaClasses({
+              size: "sm",
+              variant: "outline",
+              accentClass: retroCtaOutlineHover(accent),
+            })}`}
+          >
+            Scroll down ↓
+          </motion.button>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────────
-// Hero — always mounted. The 2px bottom border is only for the pre-lens
+// Memory card chrome — shared frame for loader, case-study header, eject bar
+// ───────────────────────────────────────────────────────────────────────────
+
+function MemoryCardFrame({
+  image,
+  title,
+  accentFit,
+  footer,
+  imageClassName = "aspect-[4/3] w-full object-cover",
+  className = "",
+}: {
+  image?: string;
+  title: string;
+  accentFit: string;
+  footer?: React.ReactNode;
+  imageClassName?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`border-[3px] border-ink bg-[#e8e8e8] p-2 shadow-[inset_2px_2px_0_#ffffff,inset_-2px_-2px_0_#808080] ${className}`}
+    >
+      <div className="overflow-hidden bg-hwite">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={image}
+            alt=""
+            className={`block ${imageClassName}`}
+            draggable={false}
+          />
+        ) : (
+          <div
+            className={`flex items-center justify-center ${accentFit} ${imageClassName}`}
+            aria-hidden
+          >
+            <span className={`${typeDecorativeGlyph} text-ink/25`}>
+              {title.charAt(0)}
+            </span>
+          </div>
+        )}
+      </div>
+      <p className={`mt-2 text-center ${typeMeta}`}>
+        Memory card
+      </p>
+      {footer}
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Case study focus — single study after memory-card “Play”
+// ───────────────────────────────────────────────────────────────────────────
+
+function CaseStudyFocusView({
+  lens,
+  sectionId,
+}: {
+  lens: Exclude<Lens, "jane">;
+  sectionId: string;
+}) {
+  if (lens === "recruiter") {
+    const project = PROJECTS.find((p) => caseStudyId(p.title) === sectionId);
+    if (!project) return null;
+    return (
+      <div className="relative z-10 border-t-[3px] border-ink bg-hwite md:border-t-0">
+        <ProjectSection
+          project={project}
+          id={sectionId}
+          scrollTarget={null}
+          onScrollTargetHandled={() => {}}
+          variant="landing"
+          beforeFooter
+        />
+        <ContactFooter lens="recruiter" />
+      </div>
+    );
+  }
+
+  const project = DESIGNER_PROJECTS.find(
+    (p) => caseStudyId(p.title) === sectionId,
+  );
+  if (!project) return null;
+  return (
+    <div className="relative z-10 border-t-[3px] border-ink bg-hwite md:border-t-0">
+      <DesignerProjectSection
+        project={project}
+        id={sectionId}
+        scrollTarget={null}
+        onScrollTargetHandled={() => {}}
+        variant="landing"
+        beforeFooter
+      />
+      <ContactFooter lens="designer" />
+    </div>
+  );
+}
+
+function RemoveMemoryCardPill({
+  title,
+  accent,
+  onRemove,
+  disabled,
+}: {
+  title: string;
+  accent: Accent;
+  onRemove: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="fixed right-4 top-4 z-40 md:right-6 md:top-6">
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        aria-label={`Remove memory card: ${title}`}
+        className={`hover-cursor-on-dark shrink-0 gap-2 ${retroCtaClasses({ size: "sm", variant: "outline", accentClass: retroCtaOutlineHover(accent) })}`}
+      >
+        <img
+          src={publicPath("/icons/eject.svg")}
+          alt=""
+          aria-hidden
+          className="h-4 w-4 shrink-0"
+          draggable={false}
+        />
+        <span>Remove memory card</span>
+      </button>
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Memory card load — retro “inserting cartridge” screen after hub pick
+// ───────────────────────────────────────────────────────────────────────────
+
+function MemoryCardLoader({
+  title,
+  image,
+  accentFit,
+  accent,
+  durationMs,
+  onPlay,
+  onDismiss,
+}: {
+  title: string;
+  image?: string;
+  accentFit: string;
+  accent: Accent;
+  durationMs: number;
+  onPlay: () => void;
+  onDismiss: () => void;
+}) {
+  const [ready, setReady] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const durationSec = durationMs / 1000;
+
+  const handlePlay = () => {
+    if (playing) return;
+    setPlaying(true);
+    window.setTimeout(onPlay, MEMORY_CARD_BLACKOUT_MS);
+  };
+
+  return (
+    <motion.div
+      role="dialog"
+      aria-modal
+      aria-labelledby="memory-card-load-title"
+      aria-busy={!ready}
+      className="fixed inset-0 z-[60] flex cursor-surface-dark items-center justify-center p-6"
+      style={{
+        transitionDuration: `${MEMORY_CARD_BLACKOUT_MS}ms`,
+        backgroundColor: playing ? "rgb(15 0 0)" : "rgba(15, 0, 0, 0.4)",
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={playing ? undefined : onDismiss}
+    >
+      <motion.div
+        className="w-full max-w-[420px] cursor-auto border-[3px] border-ink bg-[#c0c0c0] shadow-[4px_4px_0_0_#0f0000]"
+        initial={{ y: 16, scale: 0.96 }}
+        animate={
+          playing
+            ? { y: 8, scale: 0.94, opacity: 0 }
+            : { y: 0, scale: 1, opacity: 1 }
+        }
+        exit={{ y: 8, opacity: 0 }}
+        transition={{ duration: MEMORY_CARD_BLACKOUT_MS / 1000, ease: EASE_OUT_CUBIC }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b-[3px] border-ink bg-[#dfdfdf] px-3 py-2">
+          <p id="memory-card-load-title" className={typeUiLabel}>
+            {ready ? "Ready" : "Loading"}
+          </p>
+          <button
+            type="button"
+            onClick={onDismiss}
+            disabled={playing}
+            aria-label="Close"
+            className="hover-cursor-on-dark inline-flex h-10 w-10 shrink-0 items-center justify-center text-ink outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <span aria-hidden className={typeIconClose}>
+              ×
+            </span>
+          </button>
+        </div>
+
+        <div className="bg-hwite p-6 md:p-8">
+          <div className="mx-auto max-w-[220px]">
+            <MemoryCardFrame
+              image={image}
+              title={title}
+              accentFit={accentFit}
+              footer={
+                <p className={`mt-2 text-center ${typeCardTitle}`}>{title}</p>
+              }
+            />
+          </div>
+
+          <div className="mt-5 border-[3px] border-ink bg-[#e8e8e8] p-1 shadow-[inset_2px_2px_0_#808080,inset_-2px_-2px_0_#ffffff]">
+            <motion.div
+              className="h-5 bg-ink"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: durationSec, ease: "linear" }}
+              onAnimationComplete={() => setReady(true)}
+            />
+          </div>
+
+          <AnimatePresence mode="wait">
+            {ready ? (
+              <motion.div
+                key="play"
+                className="mt-5 flex justify-center"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: EASE_OUT_CUBIC }}
+              >
+                <button
+                  type="button"
+                  onClick={handlePlay}
+                  disabled={playing}
+                  className={`hover-cursor-on-dark ${retroCtaClasses({ variant: "outline", accentClass: retroCtaOutlineHover(accent) })}`}
+                >
+                  ▶ Play
+                </button>
+              </motion.div>
+            ) : (
+              <motion.p
+                key="wait"
+                className={`mt-3 text-center ${typeMeta} text-ink/70`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Please wait…
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Lens hub — high-level overview after picking a lens
+// ───────────────────────────────────────────────────────────────────────────
+
+type HubSection = {
+  id: string;
+  label: string;
+  desc: string;
+  image?: string;
+  imageMobile?: string;
+  imageAlt?: string;
+};
+
+const LensHub = React.forwardRef<
+  HTMLElement,
+  {
+    lens: Exclude<Lens, "jane">;
+    onNavigate: (sectionId: string, meta: CaseStudyNavMeta) => void;
+    onShowFull: () => void;
+    disabled: boolean;
+    hideScrollThrough?: boolean;
+  }
+>(function LensHub(
+  {
+    lens,
+    onNavigate,
+    onShowFull,
+    disabled,
+    hideScrollThrough = false,
+  },
+  ref,
+) {
+  const accent = ACCENTS[lens];
+
+  const primarySections: HubSection[] =
+    lens === "recruiter"
+      ? PROJECTS.map((p) => ({
+          id: caseStudyId(p.title),
+          label: p.title,
+          desc: p.subtitle,
+          image: p.images.hero,
+          imageAlt: `${p.title} — preview`,
+        }))
+      : DESIGNER_PROJECTS.map((p) => ({
+          id: caseStudyId(p.title),
+          label: p.title,
+          desc: p.subtitle,
+          image: p.images.hero,
+          imageMobile: p.images.heroMobile,
+          imageAlt: `${p.title} — preview`,
+        }));
+
+  return (
+    <section
+      ref={ref}
+      id="lens-hub"
+      className={`relative z-10 border-t-[3px] border-ink md:border-t-0 ${LENSES[lens].fitBg}`}
+      aria-labelledby="lens-hub-heading"
+    >
+      <div className="mx-auto max-w-[1280px] px-6 py-12 md:px-20 md:py-20">
+        <div className="text-center md:text-left">
+            <h2 id="lens-hub-heading" className={typeSection}>
+              Case studies
+            </h2>
+            <p className={`mt-3 max-w-[560px] ${typeLead}`}>
+              {HUB_INTRO[lens]}
+            </p>
+        </div>
+
+        <div
+          className={`mt-12 grid items-stretch gap-6 ${
+            primarySections.length === 3
+              ? "md:grid-cols-3"
+              : "md:grid-cols-2"
+          }`}
+        >
+          {primarySections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              disabled={disabled}
+              onClick={() =>
+                onNavigate(section.id, {
+                  label: section.label,
+                  image: section.image,
+                })
+              }
+              className={[
+                "group relative m-0 flex h-full w-full flex-col overflow-hidden border-[3px] border-ink bg-hwite p-0 text-left text-ink outline-none",
+                "transition-[transform,box-shadow] duration-200 ease-out",
+                "focus-visible:-translate-y-1 focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite focus-visible:shadow-[3px_3px_0_0_#0f0000]",
+                disabled
+                  ? "cursor-not-allowed opacity-80"
+                  : "cursor-pointer hover:-translate-y-1 hover:shadow-[3px_3px_0_0_#0f0000]",
+              ].join(" ")}
+            >
+              {section.image ? (
+                <span className="block w-full overflow-hidden border-b-[3px] border-ink">
+                  {section.imageMobile ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={section.imageMobile}
+                        alt={section.imageAlt ?? ""}
+                        className="block h-auto w-full select-none md:hidden"
+                        draggable={false}
+                        loading="lazy"
+                      />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={section.image}
+                        alt={section.imageAlt ?? ""}
+                        className="hidden h-auto w-full select-none md:block"
+                        draggable={false}
+                        loading="lazy"
+                      />
+                    </>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={section.image}
+                      alt={section.imageAlt ?? ""}
+                      className="block h-auto w-full select-none"
+                      draggable={false}
+                      loading="lazy"
+                    />
+                  )}
+                </span>
+              ) : (
+                <span
+                  className={`flex h-[120px] items-center justify-center border-b-[3px] border-ink md:h-[140px] ${accent.pill}`}
+                  aria-hidden
+                >
+                  <span className={`${typeDecorativeGlyph} text-ink/20`}>
+                    {section.label.charAt(0)}
+                  </span>
+                </span>
+              )}
+              <span className="flex min-h-0 flex-1 flex-col p-5 md:p-6">
+                <span className={typeCardTitle}>{section.label}</span>
+                <span className={`mt-2 ${typeBody} text-ink/80`}>
+                  {section.desc}
+                </span>
+                <span className="min-h-8 flex-1" aria-hidden="true" />
+                <span
+                  className={`w-fit ${retroCtaClasses({
+                    size: "sm",
+                    variant: "outline",
+                    accentClass: retroCtaOutlineHover(accent),
+                  })}`}
+                >
+                  Load case study
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {!hideScrollThrough ? (
+          <div className="mt-12 flex justify-center">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onShowFull}
+              className={retroCtaClasses({
+                variant: "outline",
+                accentClass: retroCtaOutlineHover(accent),
+              })}
+            >
+              Scroll through everything ↓
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// Hero — always mounted. The 3px bottom border is only for the pre-lens
 // landing view (card picker); after any lens is chosen it stays off so
 // the moving curtain line is not duplicated when switching lenses.
 // ───────────────────────────────────────────────────────────────────────────
@@ -1549,7 +1783,7 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
     <section
       ref={ref}
       className={`relative min-h-0 overflow-hidden bg-hwite ${
-        hideBottomBorder ? "" : "border-b-[3px] border-ink md:border-b-2"
+        hideBottomBorder ? "" : "border-b-[3px] border-ink"
       }`}
     >
       {/*
@@ -1573,13 +1807,11 @@ const Hero = React.forwardRef<HTMLElement, { hideBottomBorder?: boolean }>(
 
       <div className="relative z-10 mx-auto max-w-[1280px] px-6 pt-[53px] max-md:pb-[250px] md:px-20 md:pb-24 md:pt-28">
         <div className="min-w-0 max-w-full w-2/3 max-[499px]:w-full text-ink">
-          <p className="text-[24px] leading-tight text-ink md:text-[36px]">
-            I&rsquo;m Chaela Watkins
-          </p>
-          <h1 className="mt-2 text-[64px] font-normal uppercase leading-[55px] text-ink md:mt-6 md:text-[96px] md:leading-[0.85]">
+          <p className={typeIntro}>I&rsquo;m Chaela Watkins</p>
+          <h1 className={`mt-2 md:mt-6 ${typeDisplay}`}>
             UX &amp; Product Designer
           </h1>
-          <p className="mt-2 max-w-full text-[18px] leading-normal text-ink md:mt-10 md:leading-snug md:text-[24px]">
+          <p className={`mt-2 max-w-full md:mt-10 ${typeLead}`}>
             I design strategic, creative experiences that reduce friction and impact
             those numbers people stare at in meetings.
           </p>
@@ -1651,8 +1883,8 @@ function WhoAreYouSection({
 
   return (
     <section className="relative z-10 font-sans text-ink antialiased">
-    <div className="mx-auto w-full max-w-[1280px] border-t-4 border-ink bg-hwite pb-12 pt-6 md:border-t-0 md:px-20 md:pb-28 md:pt-20">
-      <h2 className="px-6 text-center text-[32px] font-bold leading-tight text-ink md:px-0 md:text-[48px]">
+    <div className="mx-auto w-full max-w-[1280px] border-t-[3px] border-ink bg-hwite pb-12 pt-6 md:border-t-0 md:px-20 md:pb-28 md:pt-20">
+      <h2 className={`px-6 text-center md:px-0 ${typeSection}`}>
         Who are you?
       </h2>
 
@@ -1697,19 +1929,13 @@ function WhoAreYouSection({
               </span>
 
               <span
-                className="box-border flex h-[304px] w-full flex-col justify-end border-[3px] border-ink p-5 pb-6 text-ink md:border-2"
+                className="box-border flex h-[304px] w-full flex-col justify-end border-[3px] border-ink p-5 pb-6 text-ink"
                 style={{ backgroundColor: meta.bg }}
               >
-                <span
-                  id={titleId}
-                  className="block text-left text-[40px] font-bold leading-none"
-                >
+                <span id={titleId} className={`block text-left ${typeCardTitle}`}>
                   {meta.label}
                 </span>
-                <span
-                  id={descId}
-                  className="mt-3 block text-left text-[16px] leading-snug"
-                >
+                <span id={descId} className={`mt-3 block text-left ${typeBody}`}>
                   {meta.desc}
                 </span>
               </span>
@@ -1732,8 +1958,8 @@ function WhoAreYouSection({
               onClick={() => goToSlide(i)}
               className={
                 i === activeSlide
-                  ? "h-2.5 w-2.5 rounded-full border-2 border-ink bg-ink p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
-                  : "h-2.5 w-2.5 rounded-full border-2 border-ink bg-hwite p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
+                  ? "h-2.5 w-2.5 rounded-full border-[3px] border-ink bg-ink p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
+                  : "h-2.5 w-2.5 rounded-full border-[3px] border-ink bg-hwite p-0 outline-none transition-transform focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite active:scale-90 disabled:opacity-50"
               }
             />
           </li>
@@ -1800,7 +2026,7 @@ function LensPill({
         aria-haspopup="true"
         aria-controls={open ? panelId : undefined}
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-full border-2 border-ink bg-hwite px-4 py-2 text-[14px] font-bold shadow-[3px_3px_0_0_#0f0000] outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite disabled:cursor-not-allowed disabled:opacity-60 md:text-[16px]"
+        className={`hover-cursor-on-dark flex items-center gap-2 normal-case ${retroCtaClasses({ size: "sm", variant: "outline", accentClass: retroCtaOutlineHover(ACCENTS[current]) })}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -1810,10 +2036,10 @@ function LensPill({
           className="h-7 w-auto"
           draggable={false}
         />
-        <span>{meta.label}</span>
+        <span className={typeBody}>{meta.label}</span>
         <motion.span
           aria-hidden
-          className="ml-1 text-[14px]"
+          className={`ml-1 ${typeIconSm}`}
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.18, ease: EASE_OUT_CUBIC }}
         >
@@ -1832,11 +2058,11 @@ function LensPill({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.16, ease: EASE_OUT_CUBIC }}
-            className="absolute right-0 mt-3 min-w-[240px] origin-top-right overflow-hidden rounded-3xl border-2 border-ink bg-hwite shadow-[4px_4px_0_0_#0f0000]"
+            className="absolute right-0 mt-3 min-w-[240px] origin-top-right overflow-hidden border-[3px] border-ink bg-hwite shadow-[4px_4px_0_0_#0f0000]"
           >
             <div
               id={switchHeadingId}
-              className="border-b-2 border-ink/30 px-4 py-2 text-[12px] font-bold uppercase tracking-wide text-ink/60"
+              className={`border-b-[3px] border-ink/30 px-4 py-2 uppercase tracking-wide text-ink/60 ${typeBody}`}
             >
               Switch lens
             </div>
@@ -1852,7 +2078,7 @@ function LensPill({
                         setOpen(false);
                         onPick(lensId);
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+                      className={`hover-cursor-on-dark flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition-colors hover:bg-ink hover:text-hwite focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${typeBody}`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -1879,62 +2105,26 @@ function LensPill({
 // Recruiter variant
 // ───────────────────────────────────────────────────────────────────────────
 
-// Per-lens accent tokens used by the case-study and contact sections. The
-// recruiter lens leans on the original pink palette; the designer lens
-// swaps every pink surface for its tear/coldday blue equivalent.
-type Accent = {
-  pill: string;
-  divider: string;
-  buttonHoverBorder: string;
-  buttonHoverBg: string;
-  buttonHoverShadow: string;
-};
-
-const ACCENTS: Record<Lens, Accent> = {
-  recruiter: {
-    pill: "bg-millennial",
-    divider: "bg-salmon",
-    buttonHoverBorder: "hover:border-salmon",
-    buttonHoverBg: "hover:bg-salmon",
-    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.salmon)]",
-  },
-  designer: {
-    pill: "bg-tear",
-    divider: "bg-coldday",
-    buttonHoverBorder: "hover:border-coldday",
-    buttonHoverBg: "hover:bg-coldday",
-    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.coldday)]",
-  },
-  jane: {
-    pill: "bg-sunnies",
-    divider: "bg-goldenhour",
-    buttonHoverBorder: "hover:border-goldenhour",
-    buttonHoverBg: "hover:bg-goldenhour",
-    buttonHoverShadow: "hover:shadow-[inset_0_0_0_1px_theme(colors.goldenhour)]",
-  },
-};
-
 function RecruiterVariant({
-  fitSkillSelection,
-  setFitSkillSelection,
+  belowHub = false,
+  scrollTarget,
+  onScrollTargetHandled,
 }: {
-  fitSkillSelection: Set<string>;
-  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+  belowHub?: boolean;
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
 }) {
   return (
     <div>
-      <FitSection
-        lens="recruiter"
-        selected={fitSkillSelection}
-        setSelected={setFitSkillSelection}
-      />
-
-      {/* Case studies — espresso break after the 2nd portfolio block */}
       {PROJECTS.map((project, index) => (
         <React.Fragment key={project.title}>
           <ProjectSection
             project={project}
-            fitSkillSelection={fitSkillSelection}
+            id={caseStudyId(project.title)}
+            scrollTarget={scrollTarget}
+            onScrollTargetHandled={onScrollTargetHandled}
+            belowHub={belowHub}
+            beforeFooter={index === PROJECTS.length - 1}
           />
           {index === 1 && <EspressoBreakSection />}
         </React.Fragment>
@@ -1948,32 +2138,30 @@ function RecruiterVariant({
 // ───────────────────────────────────────────────────────────────────────────
 // Designer variant
 //
-// Mirrors the recruiter structure (fit section → case studies → let's chat)
-// but with designer-specific data, a `tear`-tinted "Am I the right fit?"
-// band (wired via LENSES.designer.fitBg), and a per-case-study "Design &
-// build" three-column section that only the designer lens surfaces.
+// Mirrors the recruiter structure (case studies → let's chat) with
+// designer-specific data and a per-case-study "Design & build" section.
 // ───────────────────────────────────────────────────────────────────────────
 
 function DesignerVariant({
-  fitSkillSelection,
-  setFitSkillSelection,
+  belowHub = false,
+  scrollTarget,
+  onScrollTargetHandled,
 }: {
-  fitSkillSelection: Set<string>;
-  setFitSkillSelection: React.Dispatch<React.SetStateAction<Set<string>>>;
+  belowHub?: boolean;
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
 }) {
   return (
     <div>
-      <FitSection
-        lens="designer"
-        selected={fitSkillSelection}
-        setSelected={setFitSkillSelection}
-      />
-
       {DESIGNER_PROJECTS.map((project, index) => (
         <React.Fragment key={project.title}>
           <DesignerProjectSection
             project={project}
-            fitSkillSelection={fitSkillSelection}
+            id={caseStudyId(project.title)}
+            scrollTarget={scrollTarget}
+            onScrollTargetHandled={onScrollTargetHandled}
+            belowHub={belowHub}
+            beforeFooter={index === DESIGNER_PROJECTS.length - 1}
           />
           {index === 1 && <EspressoBreakSection />}
         </React.Fragment>
@@ -1990,426 +2178,175 @@ function DesignerVariant({
 // pink/blue brand cue stays consistent end-to-end.
 function ContactFooter({ lens }: { lens: Lens }) {
   const accent = ACCENTS[lens];
+
   return (
-    <div>
-      <div className="mx-auto max-w-[1280px] px-6 py-20 text-center md:px-20 md:py-28">
-        <h2 className="text-[40px] font-bold md:text-[56px]">
-          Let&rsquo;s chat IRL
-        </h2>
-        <p className="mx-auto mt-4 max-w-[520px] text-[18px] leading-snug md:text-[22px]">
+    <div id="contact" className="border-t-[3px] border-ink">
+      <div className="mx-auto max-w-[1280px] px-6 pt-20 pb-6 text-center md:px-20 md:pt-28 md:pb-8">
+        <h2 className={typeSection}>Let&rsquo;s chat IRL</h2>
+        <p className={`mx-auto mt-4 max-w-[520px] ${typeBody}`}>
           If you&rsquo;ve made it this far, I&rsquo;m getting the feeling we might work
           well together, and I&rsquo;d love to know what brought you here.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-[23px]">
           <a
             href="mailto:designbeanies@gmail.com"
-            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-ink p-[10px] text-[20px] font-normal leading-none text-hwite outline-none transition-colors focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink ${accent.buttonHoverBorder} ${accent.buttonHoverBg} hover:text-ink`}
+            className={`hover-cursor-on-dark whitespace-nowrap transition-colors ${retroCtaClasses({
+              variant: "outline",
+              accentClass: retroCtaOutlineHover(accent),
+            })}`}
           >
-            Email me
+            Email
           </a>
           <a
             href="https://www.linkedin.com/in/chaelawatkins"
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex w-[199px] items-center justify-center border-2 border-ink bg-transparent p-[10px] text-[20px] font-normal leading-none text-ink outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite ${accent.buttonHoverBorder} ${accent.buttonHoverShadow}`}
+            className={`hover-cursor-on-dark whitespace-nowrap transition-colors ${retroCtaClasses({
+              variant: "outline",
+              accentClass: retroCtaOutlineHover(accent),
+            })}`}
           >
-            Connect on LinkedIn
+            LinkedIn
           </a>
         </div>
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={publicPath("/footer.svg")}
-        alt=""
-        aria-hidden
-        className="block w-full select-none"
-        draggable={false}
-      />
+      <FooterIllustration />
     </div>
   );
 }
 
-// ───────────────────────────────────────────────────────────────────────────
-// FitSection — "Am I the right fit?" band. Default pills: capability chips,
-// then remaining case-study tags for the lens. Typing uses SKILL_VOCAB via
-// findSkill.
-// ───────────────────────────────────────────────────────────────────────────
-
-const FIT_PILL_MAX = 7;
-
-function FitSection({
-  lens,
-  selected,
-  setSelected,
-}: {
-  lens: Exclude<Lens, "jane">;
-  selected: Set<string>;
-  setSelected: React.Dispatch<React.SetStateAction<Set<string>>>;
-}) {
-  const [query, setQuery] = useState("");
-  const [pillsExpanded, setPillsExpanded] = useState(false);
+/** Footer strip — rises into view when the illustration enters the viewport. */
+function FooterIllustration() {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const pillExpandEase = EASE_OUT_CUBIC;
-  const pillExpandDuration = prefersReducedMotion ? 0 : 0.2;
-
-  const defaultTags = useMemo(() => defaultTagsForLens(lens), [lens]);
-
-  // What pills to render. With no query we show the lens defaults plus any
-  // user-selected tags outside that default set (so fuzzy-matched picks don't
-  // vanish when the query clears). With a query we layer substring matches
-  // over defaults first, then vocab fuzzy matches — deduped in that order.
-  const visibleSkills = useMemo(() => {
-    const base = defaultTags;
-    const selectedArr: string[] = [];
-    selected.forEach((s) => selectedArr.push(s));
-    const extras = selectedArr.filter((s) => !base.includes(s));
-    const q = query.trim().toLowerCase();
-
-    if (!q) return [...extras, ...base];
-
-    const inName = (s: string) => s.toLowerCase().includes(q);
-    const extraMatches = extras.filter(inName);
-    const baseMatches = base.filter(inName);
-    const fuzzy = findSkill(query).map((e) => e.name);
-
-    const out: string[] = [];
-    const seen = new Set<string>();
-    for (const s of [...extraMatches, ...baseMatches, ...fuzzy]) {
-      if (seen.has(s)) continue;
-      seen.add(s);
-      out.push(s);
-    }
-    return out;
-  }, [query, selected, defaultTags]);
-
-  const hasMorePills = visibleSkills.length > FIT_PILL_MAX;
-  const morePillCount = Math.max(0, visibleSkills.length - FIT_PILL_MAX);
-
-  const skillsToShow = useMemo(() => {
-    if (visibleSkills.length <= FIT_PILL_MAX || pillsExpanded) {
-      return visibleSkills;
-    }
-    return visibleSkills.slice(0, FIT_PILL_MAX);
-  }, [visibleSkills, pillsExpanded]);
+  const ref = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(prefersReducedMotion);
 
   useEffect(() => {
-    if (visibleSkills.length <= FIT_PILL_MAX) {
-      setPillsExpanded(false);
-    }
-  }, [visibleSkills.length]);
+    if (prefersReducedMotion) return;
 
-  const craftPct = useMemo(() => {
-    if (selected.size === 0) return 0;
-    let sum = 0;
-    selected.forEach((s) => {
-      sum += weightOf(s);
-    });
-    return Math.round((sum / selected.size) * 100);
-  }, [selected]);
+    const el = ref.current;
+    if (!el) return;
 
-  const caseStats = useMemo(
-    () => caseStudyOverlapStats(lens, selected),
-    [lens, selected],
+    const check = () => {
+      const { top, bottom } = el.getBoundingClientRect();
+      if (top < window.innerHeight + 120 && bottom > 0) {
+        setRevealed(true);
+      }
+    };
+
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [prefersReducedMotion]);
+
+  const illustration = (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={publicPath("/footer.svg")}
+      alt=""
+      aria-hidden
+      className="block w-full select-none"
+      draggable={false}
+    />
   );
 
-  /** Strength line + where selections appear (two-line banner). */
-  const fitBannerLines = useMemo((): { lead: string; coverage: string } | null => {
-    if (selected.size === 0) return null;
-    const designer = lens === "designer";
-    let lead: string;
-    if (craftPct >= 95) {
-      lead = designer
-        ? "Highly skilled: she’ll probably want to nerd out about all of this."
-        : "Strong match: this lines up with what she actually ships.";
-    } else if (craftPct >= 85) {
-      lead = designer
-        ? "Solid overlap: a couple picks are stretch-goal territory."
-        : "Solid overlap: what you picked matches how she works.";
-    } else if (craftPct >= 70) {
-      lead = designer
-        ? "Mixed bag: some core hits, some vibes and curiosity."
-        : "Good signal: plenty to build on in the cases below.";
-    } else {
-      lead = designer
-        ? "Bold mix: conversation could go anywhere fun."
-        : "Wide mix: she’d bring a unique lens—not a bland keyword stack.";
-    }
-
-    const { count, total } = caseStats;
-    let coverage: string;
-    if (count === 0) {
-      coverage =
-        "Nothing tagged matches these picks yet—browse below or try broader capabilities.";
-    } else if (count === total) {
-      coverage =
-        "Good news: each project below lines up with something you chose.";
-    } else if (count === 1) {
-      coverage = "Your selections show up in 1 case study below.";
-    } else {
-      coverage = `Your selections show up in ${count} of ${total} case studies below.`;
-    }
-
-    return { lead, coverage };
-  }, [craftPct, lens, selected.size, caseStats]);
-
-  function toggleSkill(skill: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(skill)) next.delete(skill);
-      else next.add(skill);
-      return next;
-    });
+  if (prefersReducedMotion) {
+    return <div ref={ref}>{illustration}</div>;
   }
-
-  function clearSelection() {
-    setSelected(() => new Set());
-    setQuery("");
-  }
-
-  // Mobile designer fit band — Figma Homepage_Mobile (458:242641, tear #a9dac9)
-  const isDesignerFit = lens === "designer";
-  const skillPillBase = isDesignerFit
-    ? "border-2 border-ink px-2.5 py-2.5 text-[20px] max-md:font-normal md:px-3 md:py-1.5 md:text-[14px] md:font-medium"
-    : "border-2 border-ink px-3 py-1.5 text-[14px] font-medium";
 
   return (
-    <section className={LENSES[lens].fitBg}>
-      <div
-        className={`mx-auto flex w-full max-w-[1280px] flex-col px-6 py-16 md:flex-row md:items-center md:px-20 md:py-24 ${
-          isDesignerFit
-            ? "max-md:gap-10 max-md:py-[60px] gap-10 md:gap-16"
-            : "gap-12 md:gap-16"
-        }`}
-      >
-        {/* LEFT: heading, subtitle, search, pills, clear — full width of band on mobile; px-6 = 24px side margin */}
-        <div
-          className={
-            isDesignerFit
-              ? "w-full min-w-0 flex-1 md:max-w-[620px]"
-              : "w-full min-w-0 flex-1 md:max-w-[620px]"
-          }
-        >
-          {isDesignerFit ? (
-            <div className="max-md:flex max-md:flex-col max-md:gap-3.5 md:contents">
-              <h2 className="text-[32px] font-bold leading-[1.05] md:text-[48px]">
-                Am I the right fit?
-              </h2>
-              <p className="text-[24px] leading-snug max-md:mt-0 md:mt-3 md:text-[20px]">
-                Pick capabilities you care about — see where they show up in the
-                work below, or search for something specific.
-              </p>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-[36px] font-bold leading-[1.05] md:text-[48px]">
-                Am I the right fit?
-              </h2>
-              <p className="mt-3 text-[18px] leading-snug md:text-[20px]">
-                Pick capabilities you care about — see where they show up in the work
-                below, or search for something specific.
-              </p>
-            </>
-          )}
-
-          <label
-            className={
-              isDesignerFit
-                ? "mt-10 flex max-md:items-center max-md:gap-2.5 max-md:px-6 max-md:py-2.5 items-center gap-3 border-2 border-ink bg-hwite px-5 py-3 focus-within:shadow-[3px_3px_0_0_#0f0000] md:mt-8"
-                : "mt-8 flex items-center gap-3 border-2 border-ink bg-hwite px-5 py-3 focus-within:shadow-[3px_3px_0_0_#0f0000]"
-            }
-            aria-label="Search capabilities"
-          >
-            <SearchIcon />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Does Chaela..."
-              className={
-                isDesignerFit
-                  ? "flex-1 bg-transparent text-[20px] outline-none placeholder:text-ink/60 md:text-[18px]"
-                  : "flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink/60 md:text-[18px]"
-              }
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="rounded-sm text-ink/50 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
-                aria-label="Clear search"
-              >
-                ✕
-              </button>
-            )}
-          </label>
-
-          <div
-            className="mt-8 flex flex-wrap content-start items-start gap-2"
-            role="group"
-            aria-label="Capabilities"
-          >
-            <AnimatePresence initial={false}>
-              {skillsToShow.map((skill) => {
-                const isOn = selected.has(skill);
-                return (
-                  <motion.button
-                    key={skill}
-                    type="button"
-                    layout
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.96 }}
-                    transition={{
-                      duration: 0.15,
-                      ease: EASE_OUT_CUBIC,
-                    }}
-                    onClick={() => toggleSkill(skill)}
-                    aria-pressed={isOn}
-                    className={`${skillPillBase} outline-none transition focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                      isOn
-                        ? "bg-ink text-hwite focus-visible:ring-hwite focus-visible:ring-offset-ink"
-                        : "bg-transparent text-ink hover:ring-1 hover:ring-inset hover:ring-ink focus-visible:ring-ink focus-visible:ring-offset-hwite"
-                    }`}
-                  >
-                    {skill}
-                  </motion.button>
-                );
-              })}
-            </AnimatePresence>
-
-            {hasMorePills && (
-              <motion.button
-                type="button"
-                layout
-                onClick={() => setPillsExpanded((e) => !e)}
-                aria-expanded={pillsExpanded}
-                aria-label={
-                  pillsExpanded
-                    ? "Show fewer capabilities"
-                    : `Show ${morePillCount} additional capabilities`
-                }
-                className={`${skillPillBase} relative inline-flex shrink-0 items-center justify-center bg-transparent text-ink outline-none transition hover:ring-1 hover:ring-inset hover:ring-ink focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite`}
-              >
-                {/* Wider of "Show less" / "+N" — no inner padding (outer skillPillBase already pads) */}
-                <span className="invisible block" aria-hidden>
-                  <span className="inline-grid [grid-template-columns:minmax(0,max-content)] [grid-template-rows:1fr]">
-                    <span className="col-start-1 row-start-1 whitespace-nowrap">
-                      Show less
-                    </span>
-                    <span className="col-start-1 row-start-1 whitespace-nowrap">
-                      {`+${morePillCount}`}
-                    </span>
-                  </span>
-                </span>
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <AnimatePresence initial={false} mode="popLayout">
-                    <motion.span
-                      key={pillsExpanded ? "less" : "more"}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={{
-                        duration: pillExpandDuration,
-                        ease: pillExpandEase,
-                      }}
-                      className="whitespace-nowrap"
-                    >
-                      {pillsExpanded
-                        ? "Show less"
-                        : `+${morePillCount}`}
-                    </motion.span>
-                  </AnimatePresence>
-                </span>
-              </motion.button>
-            )}
-
-            {visibleSkills.length === 0 && (
-              <p className="text-[14px] italic text-ink/70">
-                Nothing quite like “{query}” in Chaela’s toolkit: try another
-                term.
-              </p>
-            )}
-          </div>
-
-          {selected.size > 0 && (
-            <button
-              type="button"
-              onClick={clearSelection}
-              className="mt-5 rounded-sm text-[13px] font-semibold uppercase tracking-wide text-ink/60 underline-offset-4 outline-none hover:text-ink hover:underline focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
-            >
-              Clear {selected.size} selected
-            </button>
-          )}
-        </div>
-
-        {/* RIGHT: match banner */}
-        <div className="w-full min-w-0 md:flex-1">
-          <motion.div
-            layout
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: EASE_OUT_CUBIC }}
-            className={
-              isDesignerFit
-                ? "mx-auto flex min-h-[260px] w-full max-w-full flex-col items-center justify-center rounded-lg bg-hwite/20 px-4 py-6 text-center text-ink shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:min-h-[310px] md:max-w-[495px] md:rounded-none md:px-12 md:py-12"
-                : "mx-auto flex min-h-[260px] w-full max-w-full flex-col items-center justify-center bg-hwite/20 p-10 text-center text-ink shadow-[0px_4px_4px_0px_rgba(0,0,0,0.25)] md:min-h-[310px] md:max-w-[495px] md:p-12"
-            }
-          >
-            {selected.size === 0 ? (
-              <p
-                className={
-                  isDesignerFit
-                    ? "max-w-[320px] text-[24px] leading-[1.35] text-ink/85 md:text-[24px]"
-                    : "max-w-[320px] text-[20px] leading-[1.35] text-ink/85 md:text-[24px]"
-                }
-              >
-                Select capabilities to see where they land in the case studies
-                below.
-              </p>
-            ) : fitBannerLines ? (
-              <div
-                className={
-                  isDesignerFit
-                    ? "flex max-w-[340px] flex-col items-center gap-3 text-center text-ink"
-                    : "flex max-w-[340px] flex-col items-center gap-3 text-center text-ink"
-                }
-              >
-                <p
-                  className={
-                    isDesignerFit
-                      ? "text-[20px] leading-snug md:text-[24px]"
-                      : "text-[18px] leading-snug md:text-[22px]"
-                  }
-                >
-                  {fitBannerLines.lead}
-                </p>
-                <p
-                  className={
-                    isDesignerFit
-                      ? "max-w-[340px] text-[18px] leading-snug text-ink/85 md:text-[22px]"
-                      : "max-w-[340px] text-[17px] leading-snug text-ink/85 md:text-[20px]"
-                  }
-                >
-                  {fitBannerLines.coverage}
-                </p>
-              </div>
-            ) : null}
-          </motion.div>
-        </div>
-      </div>
-    </section>
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 1, y: 40 }}
+      animate={revealed ? { opacity: 1, y: 0 } : { opacity: 1, y: 40 }}
+      transition={{ duration: 0.8, ease: EASE_OUT_CUBIC }}
+    >
+      {illustration}
+    </motion.div>
   );
 }
 
-/** Case-study skill pills: intersection of fit selection with project tags (canonical). */
-function CaseStudyFitPills({
-  fitSkillSelection,
+
+/** Subtle scroll-reveal for recruiter / designer case study blocks. */
+function CaseStudyReveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2, margin: "0px 0px -4% 0px" }}
+      transition={{ duration: 0.52, ease: EASE_OUT_CUBIC, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+
+/** Scroll-reveal tuned for before / after comparison images. */
+function CaseStudyImageReveal({
+  children,
+  className = "",
+  side,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  side: "before" | "after";
+  delay?: number;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const x = side === "before" ? -24 : 24;
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, x, y: 10 }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true, amount: 0.18, margin: "0px 0px -8% 0px" }}
+      transition={{
+        opacity: { duration: 1.05, ease: EASE_OUT_CUBIC, delay },
+        x: { duration: 0.95, ease: EASE_OUT_CUBIC, delay },
+        y: { duration: 0.95, ease: EASE_OUT_CUBIC, delay },
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+
+const FIT_PILL_MAX = 7;
+
+/** Case-study skill pills shown on each project. */
+function CaseStudySkillPills({
   skills,
   moreSkills,
   pillClassName,
   moreButtonClassName,
 }: {
-  fitSkillSelection: Set<string>;
   skills: string[];
   moreSkills: string[];
   pillClassName: string;
@@ -2418,24 +2355,21 @@ function CaseStudyFitPills({
   const [expanded, setExpanded] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  const matched = useMemo(
-    () => matchedSkillsForProject(fitSkillSelection, skills, moreSkills),
-    [fitSkillSelection, skills, moreSkills],
-  );
+  const allSkills = useMemo(() => [...skills, ...moreSkills], [skills, moreSkills]);
 
   const pillEase = [0.22, 1, 0.36, 1] as const;
   const pillDuration = prefersReducedMotion ? 0 : 0.28;
   const pillStagger = prefersReducedMotion ? 0 : 0.03;
 
-  const head = matched.slice(0, FIT_PILL_MAX);
-  const tail = matched.slice(FIT_PILL_MAX);
+  const head = allSkills.slice(0, FIT_PILL_MAX);
+  const tail = allSkills.slice(FIT_PILL_MAX);
   const showExpandControl = tail.length > 0;
 
   useEffect(() => {
-    if (matched.length <= FIT_PILL_MAX) setExpanded(false);
-  }, [matched.length]);
+    if (allSkills.length <= FIT_PILL_MAX) setExpanded(false);
+  }, [allSkills.length]);
 
-  if (matched.length === 0) return null;
+  if (allSkills.length === 0) return null;
 
   return (
     <motion.div layout className="mt-8 flex flex-wrap gap-2">
@@ -2511,79 +2445,176 @@ function CaseStudyFitPills({
   );
 }
 
+/** Case-study landing (memory-card focus) — capped hero height. */
+const LANDING_HERO_IMG_CLASS =
+  "block h-auto w-full max-h-[min(600px,65vh)] select-none object-cover object-top md:max-h-[min(760px,72vh)]";
+
+function CaseStudyHeroImage({
+  hero,
+  heroMobile,
+  title,
+  landing = false,
+}: {
+  hero: string;
+  heroMobile?: string;
+  title: string;
+  landing?: boolean;
+}) {
+  const alt = `${title} — screens overview`;
+  const className = landing
+    ? LANDING_HERO_IMG_CLASS
+    : "block h-auto w-full select-none";
+
+  if (!heroMobile) {
+    return (
+      /* eslint-disable-next-line @next/next/no-img-element */
+      <img
+        src={hero}
+        alt={alt}
+        className={className}
+        draggable={false}
+        loading="lazy"
+      />
+    );
+  }
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={heroMobile}
+        alt={alt}
+        className={`${className} md:hidden`}
+        draggable={false}
+        loading="lazy"
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={hero}
+        alt={alt}
+        className={`${className} hidden md:block`}
+        draggable={false}
+        loading="lazy"
+      />
+    </>
+  );
+}
+
 function ProjectSection({
   project,
-  fitSkillSelection,
+  id,
+  scrollTarget,
+  onScrollTargetHandled,
+  variant = "default",
+  belowHub = false,
+  beforeFooter = false,
 }: {
   project: Project;
-  fitSkillSelection: Set<string>;
+  id: string;
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
+  variant?: "default" | "landing";
+  belowHub?: boolean;
+  beforeFooter?: boolean;
 }) {
+  const isLanding = variant === "landing";
+
   return (
-    <section>
-      {/* Hero collage — full-bleed. Sources are 2560px-wide rasters baked from
-          Figma SVG exports, so they stay crisp on Retina without upscaling. */}
-      <figure className="w-full">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={project.images.hero}
-          alt={`${project.title} — screens overview`}
-          className="block h-auto w-full select-none"
-          draggable={false}
-          loading="lazy"
-        />
-      </figure>
+    <section className={beforeFooter ? "bg-hwite pb-10" : "bg-hwite"}>
+      <SectionScrollAnchor
+        id={id}
+        scrollTarget={scrollTarget}
+        onComplete={onScrollTargetHandled}
+      />
+      <CaseStudyReveal>
+        <figure className={isLanding ? "w-full overflow-hidden" : "w-full"}>
+          <CaseStudyHeroImage
+            hero={project.images.hero}
+            heroMobile={project.images.heroMobile}
+            title={project.title}
+            landing={isLanding}
+          />
+        </figure>
+      </CaseStudyReveal>
 
-      <div className="mx-auto max-w-[1280px] px-6 py-16 md:px-20 md:py-24">
-        <h3 className="text-[40px] font-bold leading-none text-ink md:text-[64px]">
-          {project.title}
-        </h3>
-        <p className="mt-2 text-[18px] font-normal leading-normal text-ink md:text-[24px]">
-          {project.subtitle}
-        </p>
+      <CaseStudyReveal delay={0.06}>
+        <div
+          className={
+            isLanding
+              ? "mx-auto max-w-[1280px] px-6 pt-10 md:px-20 md:pt-14"
+              : belowHub
+                ? "mx-auto max-w-[1280px] px-6 pt-12 md:px-20 md:pt-16"
+                : "mx-auto max-w-[1280px] px-6 pt-16 md:px-20 md:pt-24"
+          }
+        >
+          <h3
+            id={id}
+            tabIndex={-1}
+            className={typeSectionScroll}
+          >
+            {project.title}
+          </h3>
+          <p className={`mt-2 ${typeLead}`}>
+            {project.subtitle}
+          </p>
 
-        <CaseStudyFitPills
-          fitSkillSelection={fitSkillSelection}
-          skills={project.skills}
-          moreSkills={project.moreSkills}
-          pillClassName="bg-millennial p-2 text-[14px] font-normal leading-none text-ink"
-          moreButtonClassName="relative overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite"
-        />
+          <CaseStudySkillPills
+            skills={project.skills}
+            moreSkills={project.moreSkills}
+            pillClassName={`bg-millennial p-2 ${typePill}`}
+            moreButtonClassName={`hover-cursor-on-dark relative overflow-hidden ${retroCtaClasses({ size: "xs", variant: "outline", accentClass: retroCtaOutlineHover(ACCENTS.recruiter) })}`}
+          />
+        </div>
+      </CaseStudyReveal>
 
+      <div
+        className={
+          isLanding
+            ? "mx-auto max-w-[1280px] px-6 pb-10 md:px-20 md:pb-14"
+            : belowHub
+              ? "mx-auto max-w-[1280px] px-6 pb-12 md:px-20 md:pb-16"
+              : "mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24"
+        }
+      >
         <div className="mt-12 space-y-14 md:mt-[76px] md:space-y-[110px]">
-          <DetailRow label="The Challenge" body={project.challenge} />
-          <DetailRow label="The Approach" body={project.approach} />
-          <DetailRow label="The Solution" body={project.solution} />
+          <DetailRow label="The Challenge" body={project.challenge} revealDelay={0} />
+          <DetailRow label="The Approach" body={project.approach} revealDelay={0.08} />
+          <DetailRow label="The Solution" body={project.solution} revealDelay={0.16} />
         </div>
       </div>
 
-      <div className="mx-auto mt-16 w-full max-w-[1280px] px-6 md:mt-[110px] md:px-20">
+      <div className="mx-auto mt-16 w-full max-w-[1280px] px-6 pb-8 md:mt-[110px] md:px-20 md:pb-16">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
-          <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
-              Before
-            </figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={project.images.before}
-              alt={`${project.title} — before`}
-              className="block h-auto w-full max-w-full select-none"
-              draggable={false}
-              loading="lazy"
-            />
-          </figure>
-          <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
-              After
-            </figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={project.images.after}
-              alt={`${project.title} — after`}
-              className="block h-auto w-full max-w-full select-none"
-              draggable={false}
-              loading="lazy"
-            />
-          </figure>
+          <CaseStudyImageReveal side="before">
+            <figure className="flex min-w-0 w-full flex-col items-stretch">
+              <figcaption className={`mb-6 text-center ${typeSubsection}`}>
+                Before
+              </figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={project.images.before}
+                alt={`${project.title} — before`}
+                className="block h-auto w-full max-w-full select-none"
+                draggable={false}
+                loading="lazy"
+              />
+            </figure>
+          </CaseStudyImageReveal>
+          <CaseStudyImageReveal side="after" delay={0.14}>
+            <figure className="flex min-w-0 w-full flex-col items-stretch">
+              <figcaption className={`mb-6 text-center ${typeSubsection}`}>
+                After
+              </figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={project.images.after}
+                alt={`${project.title} — after`}
+                className="block h-auto w-full max-w-full select-none"
+                draggable={false}
+                loading="lazy"
+              />
+            </figure>
+          </CaseStudyImageReveal>
         </div>
       </div>
     </section>
@@ -2599,115 +2630,159 @@ function ProjectSection({
 
 function DesignerProjectSection({
   project,
-  fitSkillSelection,
+  id,
+  scrollTarget,
+  onScrollTargetHandled,
+  variant = "default",
+  belowHub = false,
+  beforeFooter = false,
 }: {
   project: DesignerProject;
-  fitSkillSelection: Set<string>;
+  id: string;
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
+  variant?: "default" | "landing";
+  belowHub?: boolean;
+  beforeFooter?: boolean;
 }) {
   const accent = ACCENTS.designer;
+  const isLanding = variant === "landing";
 
   return (
-    <section>
-      <figure className="w-full">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={project.images.hero}
-          alt={`${project.title} — screens overview`}
-          className="block h-auto w-full select-none"
-          draggable={false}
-          loading="lazy"
-        />
-      </figure>
+    <section className={beforeFooter ? "bg-hwite pb-10" : "bg-hwite"}>
+      <SectionScrollAnchor
+        id={id}
+        scrollTarget={scrollTarget}
+        onComplete={onScrollTargetHandled}
+      />
+      <CaseStudyReveal>
+        <figure className={isLanding ? "w-full overflow-hidden" : "w-full"}>
+          <CaseStudyHeroImage
+            hero={project.images.hero}
+            heroMobile={project.images.heroMobile}
+            title={project.title}
+            landing={isLanding}
+          />
+        </figure>
+      </CaseStudyReveal>
 
-      <div className="mx-auto max-w-[1280px] px-6 py-16 md:px-20 md:py-24">
-        {/* Mobile case-study type — Figma 458:238149 */}
-        <h3 className="text-[48px] font-bold leading-[56px] text-ink md:text-[64px] md:leading-none">
-          {project.title}
-        </h3>
-        <p className="mt-2 text-[24px] font-normal leading-normal text-ink">
-          {project.subtitle}
-        </p>
+      <CaseStudyReveal delay={0.06}>
+        <div
+          className={
+            isLanding
+              ? "mx-auto max-w-[1280px] px-6 pt-10 md:px-20 md:pt-14"
+              : belowHub
+                ? "mx-auto max-w-[1280px] px-6 pt-12 md:px-20 md:pt-16"
+                : "mx-auto max-w-[1280px] px-6 pt-16 md:px-20 md:pt-24"
+          }
+        >
+          <h3
+            id={id}
+            tabIndex={-1}
+            className={typeSectionScroll}
+          >
+            {project.title}
+          </h3>
+          <p className={`mt-2 ${typeLead}`}>
+            {project.subtitle}
+          </p>
 
-        <CaseStudyFitPills
-          fitSkillSelection={fitSkillSelection}
-          skills={project.skills}
-          moreSkills={project.moreSkills}
-          pillClassName={`${accent.pill} p-2 text-[14px] font-normal leading-none text-ink`}
-          moreButtonClassName="relative box-border overflow-hidden border border-ink p-2 text-[14px] font-normal leading-none text-ink transition-colors hover:bg-ink hover:text-hwite focus:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-hwite md:border-2"
-        />
+          <CaseStudySkillPills
+            skills={project.skills}
+            moreSkills={project.moreSkills}
+            pillClassName={`${accent.pill} p-2 ${typePill}`}
+            moreButtonClassName={`hover-cursor-on-dark relative box-border overflow-hidden ${retroCtaClasses({ size: "xs", variant: "outline", accentClass: retroCtaOutlineHover(accent) })}`}
+          />
+        </div>
+      </CaseStudyReveal>
 
+      <div
+        className={
+          isLanding
+            ? "mx-auto max-w-[1280px] px-6 pb-10 md:px-20 md:pb-14"
+            : belowHub
+              ? "mx-auto max-w-[1280px] px-6 pb-12 md:px-20 md:pb-16"
+              : "mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24"
+        }
+      >
         <div className="mt-12 space-y-14 md:mt-[76px] md:space-y-[110px]">
           <DetailRow
             label="The Challenge"
             body={project.challenge}
             dividerClass={accent.divider}
+            revealDelay={0}
           />
           <DetailRow
             label="The Solution"
             body={project.solution}
             dividerClass={accent.divider}
+            revealDelay={0.08}
           />
         </div>
       </div>
 
       {/* Design & build — three-column grid of illustration + title + body.
           Wide container matches the Figma 1118px content width. */}
-      <div className="mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
-        <h4 className="text-[32px] font-bold leading-none text-ink md:text-[36px]">
-          Design &amp; build
-        </h4>
-        <div className="mt-10 grid grid-cols-1 gap-10 md:mt-[76px] md:grid-cols-3 md:gap-[58px]">
-          {project.designBuild.map((col) => (
-            <div key={col.title} className="flex flex-col">
-              <div className="flex h-[164px] w-[164px] items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={col.illustration}
-                  alt=""
-                  aria-hidden
-                  className="block h-full w-full select-none"
-                  draggable={false}
-                />
-              </div>
-              <h5 className="mt-10 text-[24px] font-bold leading-none text-ink md:text-[28px]">
-                {col.title}
-              </h5>
-              <p className="mt-4 text-[16px] font-normal leading-[1.6] text-ink md:text-[18px]">
-                {col.body}
-              </p>
-            </div>
-          ))}
+      <CaseStudyReveal>
+        <div className="mx-auto max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
+          <h4 className={typeSubsection}>Design &amp; build</h4>
+          <div className="mt-10 grid grid-cols-1 gap-10 md:mt-[76px] md:grid-cols-3 md:gap-[58px]">
+            {project.designBuild.map((col, index) => (
+              <CaseStudyReveal
+                key={col.title}
+                delay={index * 0.08}
+                className="flex flex-col"
+              >
+                <div className="flex h-[164px] w-[164px] items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={col.illustration}
+                    alt=""
+                    aria-hidden
+                    className="block h-full w-full select-none"
+                    draggable={false}
+                  />
+                </div>
+                <h5 className={`mt-10 ${typeSubsection}`}>{col.title}</h5>
+                <p className={`mt-4 ${typeBody}`}>{col.body}</p>
+              </CaseStudyReveal>
+            ))}
+          </div>
         </div>
-      </div>
+      </CaseStudyReveal>
 
-      <div className="mx-auto w-full max-w-[1280px] px-6 pb-16 md:px-20 md:pb-24">
+      <div className="mx-auto w-full max-w-[1280px] px-6 pb-8 md:px-20 md:pb-16">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
-          <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
-              Before
-            </figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={project.images.before}
-              alt={`${project.title} — before`}
-              className="block h-auto w-full max-w-full select-none"
-              draggable={false}
-              loading="lazy"
-            />
-          </figure>
-          <figure className="flex min-w-0 w-full flex-col items-stretch">
-            <figcaption className="mb-6 text-center text-[28px] font-normal leading-none text-ink md:text-[32px]">
-              After
-            </figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={project.images.after}
-              alt={`${project.title} — after`}
-              className="block h-auto w-full max-w-full select-none"
-              draggable={false}
-              loading="lazy"
-            />
-          </figure>
+          <CaseStudyImageReveal side="before">
+            <figure className="flex min-w-0 w-full flex-col items-stretch">
+              <figcaption className={`mb-6 text-center ${typeSubsection}`}>
+                Before
+              </figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={project.images.before}
+                alt={`${project.title} — before`}
+                className="block h-auto w-full max-w-full select-none"
+                draggable={false}
+                loading="lazy"
+              />
+            </figure>
+          </CaseStudyImageReveal>
+          <CaseStudyImageReveal side="after" delay={0.14}>
+            <figure className="flex min-w-0 w-full flex-col items-stretch">
+              <figcaption className={`mb-6 text-center ${typeSubsection}`}>
+                After
+              </figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={project.images.after}
+                alt={`${project.title} — after`}
+                className="block h-auto w-full max-w-full select-none"
+                draggable={false}
+                loading="lazy"
+              />
+            </figure>
+          </CaseStudyImageReveal>
         </div>
       </div>
     </section>
@@ -2753,6 +2828,30 @@ const JANE_EXPERIENCE: JaneExperience[] = [
   },
 ];
 
+// Two columns — LTR scan: down col 1, then col 2 (priority order preserved).
+const JANE_SKILLS: readonly [string[], string[]] = [
+  [
+    "UX design",
+    "User research",
+    "Product strategy",
+    "Collaboration",
+    "Information architecture",
+    "Visual design",
+    "User testing",
+    "Workshop facilitation",
+  ],
+  [
+    "Interaction design",
+    "Design systems",
+    "Prototyping",
+    "Stakeholder alignment",
+    "Information hierarchy",
+    "Content strategy",
+    "Usability testing",
+    "Graphic design",
+  ],
+];
+
 // Four short columns of tool names, grouped by the type of job they do.
 const JANE_TOOLS: readonly [string[], string[], string[], string[]] = [
   ["Figma", "Adobe CC", "Squarespace", "WordPress"],
@@ -2796,7 +2895,7 @@ const JANE_PRINCIPLES: JanePrinciple[] = [
     body: "There’s something that happens when you slow down and step away from technology. Taking a hike outside, sketching or writing on paper, a conversation over coffee. Inspiration doesn’t always come from staring at a monitor, and in a world where AI can generate anything in seconds, the most interesting ideas still tend to come from being a human first.",
     icon: publicPath("/icons/fi-ss-tree.svg"),
     image: {
-      src: publicPath("/projects/srp-hero.png"),
+      src: publicPath("/projects/SRPDESKTOP.svg"),
       alt: "SRP tile redesign",
     },
   },
@@ -2811,9 +2910,19 @@ const JANE_PRINCIPLES: JanePrinciple[] = [
   },
 ];
 
-function JaneVariant() {
+function JaneVariant({
+  scrollTarget,
+  onScrollTargetHandled,
+}: {
+  scrollTarget: string | null;
+  onScrollTargetHandled: () => void;
+}) {
   return (
     <div>
+      <ScrollAnchor
+        targetId={scrollTarget}
+        onComplete={onScrollTargetHandled}
+      />
       <WhatIDoSection />
       <ApproachSection />
       <ContactFooter lens="jane" />
@@ -2823,19 +2932,18 @@ function JaneVariant() {
 
 function WhatIDoSection() {
   // Figma: desktop — label + short sunnies divider (JaneRow). Mobile (465:25440)
-  // — 48/56 "What I do", 32px row titles, full-width 1px ink dividers, 16px/1.76
+  // — 48/56 "What I do", 32px row titles, full-width sunnies dividers, 16px/1.76
   // body, tools in 2×2 at 120px + 24px gap.
   return (
     <section className="bg-[#F3F3F3]">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-[60px] px-6 py-[60px] md:gap-[63px] md:px-20 md:py-20">
-        <h2 className="text-[48px] font-normal leading-[56px] text-ink md:leading-[1.1]">
+        <h2 id="what-i-do" tabIndex={-1} className={typeSectionScroll}>
           What I do
         </h2>
 
         <div className="flex flex-col gap-[60px] md:gap-[110px]">
-          {/* My experience */}
           <JaneRow label="My experience">
-            <div className="space-y-5 text-[16px] font-normal leading-[1.76] text-ink">
+            <div className={`space-y-5 ${typeBody}`}>
               {JANE_EXPERIENCE.map((job) => (
                 <p key={`${job.company}-${job.title}`}>
                   {job.title}, {job.company}
@@ -2846,13 +2954,26 @@ function WhatIDoSection() {
             </div>
           </JaneRow>
 
-          {/* Tools I use: 2×2 @ 120 + 24 gap (mobile, Figma 465:33605); 4 col @ 36px gap desktop */}
           <JaneRow label="Tools I use">
-            <div className="grid grid-cols-2 content-start gap-6 text-[16px] font-normal leading-[1.76] text-ink md:grid-cols-4 md:gap-x-9 md:gap-y-6">
+            <div className={`grid grid-cols-2 content-start gap-6 md:grid-cols-4 md:gap-x-9 md:gap-y-6 ${typeBody}`}>
               {JANE_TOOLS.map((col, i) => (
                 <ul key={i} className="w-[120px] md:w-auto">
                   {col.map((tool) => (
                     <li key={tool}>{tool}</li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          </JaneRow>
+
+          <JaneRow label="Core skills">
+            <div className={`grid grid-cols-2 content-start gap-x-6 gap-y-0 md:gap-x-9 ${typeBody}`}>
+              {JANE_SKILLS.map((col, i) => (
+                <ul key={i} className="min-w-0">
+                  {col.map((skill) => (
+                    <li key={skill} className="md:whitespace-nowrap">
+                      {skill}
+                    </li>
                   ))}
                 </ul>
               ))}
@@ -2866,57 +2987,61 @@ function WhatIDoSection() {
 
 function EspressoBreakSection() {
   return (
-    <section className="bg-ink px-6 py-16 md:py-[120px] md:pb-[121px]">
+    <section className="cursor-surface-dark bg-ink px-6 py-16 md:py-[120px] md:pb-[121px]">
       <div className="mx-auto flex w-full max-w-[828px] flex-col items-center gap-20 md:gap-[234px]">
-        <div className="flex w-full max-w-[764px] flex-col items-center gap-3">
-          <h2 className="text-center text-[28px] font-bold leading-[1.1] text-hwite md:text-[48px]">
-            You&rsquo;ve been here a while. Time for an espresso break
-          </h2>
-          <div
-            className="relative w-full max-w-[570px]"
-            style={{ aspectRatio: "570.296 / 403" }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={publicPath("/jane/coffee-break/espresso-illustration.svg")}
-              alt=""
-              className="block h-full w-full object-contain"
-              draggable={false}
-            />
-          </div>
-        </div>
-        <div className="flex w-full flex-col items-center gap-10 md:gap-[62px]">
-          <h2 className="w-full text-center text-[28px] font-bold leading-[1.1] text-hwite md:text-[48px]">
-            Oh, you&rsquo;re hangin&rsquo; around?
-          </h2>
-          <div className="flex w-full max-w-[540px] flex-col items-center">
-            <a
-              href="https://makeagif.com/gif/brooklyn-nine-nine-cool-cool-cool-UtoxFx"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        <CaseStudyReveal>
+          <div className="flex w-full max-w-[764px] flex-col items-center gap-3">
+            <h2 className={`text-center text-hwite ${typeSection}`}>
+              You&rsquo;ve been here a while. Time for an espresso break
+            </h2>
+            <div
+              className="relative w-full max-w-[570px]"
+              style={{ aspectRatio: "570.296 / 403" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://i.makeagif.com/media/8-23-2018/UtoxFx.gif"
-                alt="Brooklyn Nine-Nine — cool, cool, cool…"
-                className="block h-auto w-full"
-                loading="lazy"
-                decoding="async"
+                src={publicPath("/jane/coffee-break/espresso-illustration.svg")}
+                alt=""
+                className="block h-full w-full object-contain"
+                draggable={false}
               />
-            </a>
-            <p className="mt-2 text-center text-[11px] leading-snug text-hwite/50">
+            </div>
+          </div>
+        </CaseStudyReveal>
+        <CaseStudyReveal delay={0.08}>
+          <div className="flex w-full flex-col items-center gap-10 md:gap-[62px]">
+            <h2 className={`w-full text-center text-hwite ${typeSection}`}>
+              Oh, you&rsquo;re hangin&rsquo; around?
+            </h2>
+            <div className="flex w-full max-w-[540px] flex-col items-center">
               <a
-                href="https://makeagif.com"
+                href="https://makeagif.com/gif/brooklyn-nine-nine-cool-cool-cool-UtoxFx"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-sm underline decoration-hwite/30 underline-offset-2 outline-none hover:text-hwite/70 focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+                className="block w-full rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://i.makeagif.com/media/8-23-2018/UtoxFx.gif"
+                  alt="Brooklyn Nine-Nine — cool, cool, cool…"
+                  className="block h-auto w-full"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+              <p className={`mt-2 text-center ${typeBody} text-hwite/50`}>
+                <a
+                  href="https://makeagif.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-sm underline decoration-hwite/30 underline-offset-2 outline-none hover:text-hwite/70 focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 MakeaGif
               </a>
             </p>
           </div>
-        </div>
+          </div>
+        </CaseStudyReveal>
       </div>
     </section>
   );
@@ -2934,15 +3059,11 @@ function JaneRow({
 }) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-[185px_450px_464px] md:items-start md:gap-0">
-      <h3 className="text-[32px] font-normal leading-[normal] text-ink max-md:leading-[normal] md:leading-[1.15]">
-        {label}
-      </h3>
+      <h3 className={typeSubsection}>{label}</h3>
       <div
-        className="h-px w-full max-md:bg-ink md:hidden"
+        className="h-px w-full max-md:bg-sunnies md:hidden"
         aria-hidden
       />
-      {/* Middle column holds the short divider — centered vertically on
-          the label's cap height via a hair of top margin. */}
       <div className="hidden md:relative md:block md:h-[82px]">
         <div
           aria-hidden
@@ -2956,53 +3077,107 @@ function JaneRow({
 
 function ApproachSection() {
   return (
-    <section>
+    <section className="bg-hwite">
       <div className="mx-auto max-w-[1280px] bg-[#F3F3F3] px-6 py-[60px] md:bg-hwite md:px-20 md:py-16">
-        <h2 className="text-[48px] font-normal leading-[56px] text-ink md:leading-[1.1]">
+        <h2 id="approach" tabIndex={-1} className={typeSectionScroll}>
           My approach to the craft
         </h2>
       </div>
 
       {JANE_PRINCIPLES.map((principle, i) => {
         const reversed = i % 2 === 1;
-        // The icon panel alternates between goldenhour and sunnies row to
-        // row — Figma does this so the glyph always sits on the opposite
-        // of its own fill color (yellow bulb on orange, orange rocket on
-        // yellow, etc.). The Flaticon SVGs already carry the correct
-        // glyph color baked in.
         const iconPanelBg = reversed ? "bg-sunnies" : "bg-goldenhour";
         return (
           <React.Fragment key={principle.title}>
-            {/* Desktop: principle copy + icon sit in the 1280px rail; flex-1 wings
-                carry the warm / hwite fills so color still reads edge-to-edge. */}
             <PrincipleRow
               principle={principle}
               reversed={reversed}
               iconPanelBg={iconPanelBg}
             />
-            {/* Full-bleed strip — outside max-width so raster spans viewport */}
-            {/* The img's width/height attrs give the browser an implicit
-                aspect-ratio so layout space is reserved before the PNG
-                arrives (no CLS). h-auto lets the image derive its own
-                height from that ratio + w-full parent — unlike h-full,
-                which can fight aspect-ratio on the parent and produce a
-                sub-viewport box. */}
-            <figure className="w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={principle.image.src}
-                alt={principle.image.alt}
-                width={2560}
-                height={1722}
-                className="block h-auto w-full select-none"
-                draggable={false}
-                loading="lazy"
-              />
-            </figure>
+            <JanePrincipleImage principle={principle} />
           </React.Fragment>
         );
       })}
     </section>
+  );
+}
+
+function JanePrincipleImage({ principle }: { principle: JanePrinciple }) {
+  return (
+    <JaneFadeIn className="w-full">
+      <figure className="w-full">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={principle.image.src}
+          alt={principle.image.alt}
+          width={2560}
+          height={1722}
+          className="block h-auto w-full select-none"
+          draggable={false}
+          loading="lazy"
+        />
+      </figure>
+    </JaneFadeIn>
+  );
+}
+
+/** Scroll-reveal fade for Jane full-bleed project strips. */
+function JaneFadeIn({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, amount: 0.25, margin: "0px 0px -3% 0px" }}
+      transition={{ duration: 0.42, ease: EASE_OUT_CUBIC }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Scroll-reveal for Jane principle icons — slides in from the panel side. */
+function JaneSlideInIcon({
+  from,
+  children,
+  className = "",
+}: {
+  from: "left" | "right";
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const x = from === "left" ? -40 : 40;
+
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, x }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.35, margin: "0px 0px -4% 0px" }}
+      transition={{
+        opacity: { duration: 1.05, ease: EASE_OUT_CUBIC },
+        x: { duration: 0.85, ease: EASE_OUT_CUBIC },
+      }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -3015,6 +3190,9 @@ function PrincipleRow({
   reversed: boolean;
   iconPanelBg: string;
 }) {
+  const iconSlideFrom: "left" | "right" = reversed ? "left" : "right";
+  const textSlideFrom: "left" | "right" = reversed ? "right" : "left";
+
   // Text panel sits on hwite. On md+, the row sits in the shared 1280px rail;
   // full-bleed color is painted by the outer flex wings, not viewport-wide columns.
   const text = (
@@ -3027,16 +3205,13 @@ function PrincipleRow({
         reversed ? "md:pr-20 md:pl-12" : "md:pl-20 md:pr-12",
       ].join(" ")}
     >
-      <div
+      <JaneSlideInIcon
+        from={textSlideFrom}
         className={`flex w-full max-w-[549px] flex-col gap-6 md:gap-8 ${reversed ? "md:ml-auto" : ""}`}
       >
-        <h3 className="text-[24px] font-normal leading-[1.15] text-ink md:text-[32px]">
-          {principle.title}
-        </h3>
-        <p className="text-[18px] leading-[1.45] text-ink md:text-[24px]">
-          {principle.body}
-        </p>
-      </div>
+        <h3 className={typeSubsection}>{principle.title}</h3>
+        <p className={typeBody}>{principle.body}</p>
+      </JaneSlideInIcon>
     </div>
   );
   const icon = (
@@ -3047,16 +3222,21 @@ function PrincipleRow({
         iconPanelBg,
       ].join(" ")}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={principle.icon}
-        alt=""
-        aria-hidden
-        width={256}
-        height={256}
-        className="h-[160px] w-[160px] select-none md:h-[256px] md:w-[256px]"
-        draggable={false}
-      />
+      <JaneSlideInIcon
+        from={iconSlideFrom}
+        className="flex items-center justify-center"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={principle.icon}
+          alt=""
+          aria-hidden
+          width={256}
+          height={256}
+          className="h-[160px] w-[160px] select-none md:h-[256px] md:w-[256px]"
+          draggable={false}
+        />
+      </JaneSlideInIcon>
     </div>
   );
 
@@ -3064,6 +3244,7 @@ function PrincipleRow({
   const mobile = (
     <div className="w-full bg-[#F3F3F3] py-[60px] md:hidden">
       <div className="mx-auto max-w-[1280px] px-6">
+      <JaneSlideInIcon from="left">
       <div
         className={`flex h-[164px] w-[164px] items-center justify-center self-start rounded-full p-[34px] ${iconPanelBg}`}
       >
@@ -3078,14 +3259,11 @@ function PrincipleRow({
           draggable={false}
         />
       </div>
-      <div className="flex flex-col gap-8 pt-6">
-        <h3 className="text-[32px] font-normal leading-[normal] text-ink">
-          {principle.title}
-        </h3>
-        <p className="text-[24px] font-normal leading-[normal] text-ink">
-          {principle.body}
-        </p>
-      </div>
+      </JaneSlideInIcon>
+      <JaneSlideInIcon from="right" className="flex flex-col gap-8 pt-6">
+        <h3 className={typeSubsection}>{principle.title}</h3>
+        <p className={typeBody}>{principle.body}</p>
+      </JaneSlideInIcon>
       </div>
     </div>
   );
@@ -3130,44 +3308,28 @@ function DetailRow({
   label,
   body,
   dividerClass = "bg-salmon",
+  revealDelay = 0,
 }: {
   label: string;
   body: string;
   dividerClass?: string;
+  revealDelay?: number;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-[225px_303px_1fr] md:items-start md:gap-0">
-      <h4 className="text-[24px] font-normal leading-none text-ink md:text-[32px]">
-        {label}
-      </h4>
-      <div
-        aria-hidden
-        className={`mt-3 hidden h-[2px] w-full md:mt-[22px] md:block ${dividerClass}`}
-      />
-      <p className="text-[16px] font-normal leading-[1.76] text-ink md:ml-[41px] md:max-w-[530px]">
-        {body}
-      </p>
-    </div>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      className="shrink-0"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
+    <CaseStudyReveal delay={revealDelay}>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(140px,225px)_minmax(0,1fr)] md:items-start md:gap-x-6 lg:gap-x-8 xl:grid-cols-[225px_minmax(48px,303px)_minmax(280px,530px)] xl:items-start xl:gap-x-0">
+        <h4 className={`${typeSubsection} md:col-start-1 md:row-start-1`}>
+          {label}
+        </h4>
+        <div
+          aria-hidden
+          className={`hidden h-[2px] min-w-0 xl:col-start-2 xl:row-start-1 xl:mt-[22px] xl:block ${dividerClass}`}
+        />
+        <p className={`min-w-0 ${typeBody} md:col-start-2 md:row-start-1 xl:col-start-3 xl:ml-[41px]`}>
+          {body}
+        </p>
+      </div>
+    </CaseStudyReveal>
   );
 }
 

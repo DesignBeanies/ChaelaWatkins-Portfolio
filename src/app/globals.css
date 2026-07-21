@@ -18,3 +18,57 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
+
+/* Pixel cursors from user-provided asset sheet (top row). */
+@media (pointer: fine) {
+  :root {
+    --cursor-default: url("/cursors/arrow.png") 2 0, auto;
+    --cursor-pointer: url("/cursors/pointer.png") 4 1, pointer;
+    --cursor-default-light: url("/cursors/arrow-light.png") 2 0, auto;
+    --cursor-pointer-light: url("/cursors/pointer-light.png") 4 1, pointer;
+  }
+
+  html {
+    cursor: var(--cursor-default);
+  }
+
+  a,
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label,
+  summary,
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  .cursor-pointer:not(:disabled) {
+    cursor: var(--cursor-pointer);
+  }
+
+  /* Dark surfaces — inverted (white) cursors for contrast. */
+  .cursor-surface-dark {
+    cursor: var(--cursor-default-light);
+  }
+
+  .cursor-surface-dark a,
+  .cursor-surface-dark button:not(:disabled),
+  .cursor-surface-dark [role="button"]:not([aria-disabled="true"]),
+  .cursor-surface-dark label,
+  .cursor-surface-dark summary,
+  .cursor-surface-dark select,
+  .cursor-surface-dark .cursor-pointer:not(:disabled) {
+    cursor: var(--cursor-pointer-light);
+  }
+
+  .hover-cursor-on-dark:hover {
+    cursor: var(--cursor-pointer-light);
+  }
+
+  :disabled,
+  [aria-disabled="true"],
+  .cursor-not-allowed {
+    cursor: not-allowed;
+  }
+}

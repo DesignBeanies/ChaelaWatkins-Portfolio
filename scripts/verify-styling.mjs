@@ -74,6 +74,17 @@ if (!html.includes('rel="stylesheet"') || !html.includes(hrefNeedle)) {
   );
 }
 
+const tailwindConfigPath = join(root, "tailwind.config.ts");
+if (!existsSync(tailwindConfigPath)) {
+  fail("Missing tailwind.config.ts.");
+}
+const tailwindConfig = readFileSync(tailwindConfigPath, "utf8");
+if (!tailwindConfig.includes("./src/lib/")) {
+  fail(
+    'tailwind.config.ts content must include "./src/lib/**/*" — typography tokens in src/lib/typography.ts will not be scanned otherwise.',
+  );
+}
+
 console.log(
   `verify-styling: OK (basePath=${basePath === "" ? "(root)" : basePath}, ${cssFiles.length} CSS file(s))`,
 );

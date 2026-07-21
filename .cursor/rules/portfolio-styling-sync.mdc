@@ -29,3 +29,9 @@ This app uses **GitHub Pages** static export. **`prodBasePath`** in **`next.conf
 
 - **Local** builds: if **`prodBasePath`** is non-empty, a symlink **`out/<segment>` → `out`** is created so **`npm run preview`** (`serve out`) resolves **`/<segment>/_next/...`** URLs. If **`prodBasePath`** is **empty**, the script **skips** the symlink (site at domain root; **`serve out`** uses **`/_next/...`** directly).
 - **CI** (`CI=true`) **skips** that symlink — Pages serves **`out/`** at the site root or project path; a self-referential symlink breaks **`upload-pages-artifact`** (runaway archive).
+
+## Typography tokens
+
+- Scale lives in **`src/lib/typography.ts`**; full reference in **`docs/typography.md`**.
+- **`tailwind.config.ts`** `content` must include **`./src/lib/**/*.{js,ts,jsx,tsx,mdx}`** so token utilities (e.g. `text-[32px]`) are emitted. Missing that path makes headings render at body size (~16px).
+- **When adding new UI:** use an existing token or add one in `typography.ts`, update `docs/typography.md`, then run **`npm run verify`**. Do not inline `text-[Npx]` for copy.

@@ -2,6 +2,8 @@
 
 import React, { useEffect } from "react";
 
+import { typeBody, typeLead } from "@/lib/typography";
+
 export default function Error({
   error,
   reset,
@@ -16,8 +18,8 @@ export default function Error({
 
   return (
     <div className="mx-auto flex min-h-[50dvh] max-w-md flex-col items-center justify-center gap-3 px-6 py-20 text-center text-ink">
-      <h1 className="text-xl font-bold">Something went wrong</h1>
-      <p className="text-ink/80">
+      <h1 className={typeLead}>Something went wrong</h1>
+      <p className={`${typeBody} text-ink/80`}>
         The page hit an error while loading. Try again, or run{" "}
         <code className="font-mono text-sm">npm run dev:clean</code> to clear
         the Next.js cache, then refresh.
@@ -25,7 +27,7 @@ export default function Error({
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-2 border-2 border-ink bg-ink px-4 py-2 text-hwite outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+        className="mt-2 border-[3px] border-ink bg-ink px-4 py-2 text-hwite outline-none focus-visible:ring-2 focus-visible:ring-hwite focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
       >
         Try again
       </button>
