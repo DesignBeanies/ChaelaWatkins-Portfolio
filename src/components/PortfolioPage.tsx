@@ -28,6 +28,7 @@ import {
   typeMeta,
   typePill,
   typeSection,
+  typeSectionOnDark,
   typeSectionScroll,
   typeSubsection,
   typeUiLabel,
@@ -2991,7 +2992,7 @@ function EspressoBreakSection() {
       <div className="mx-auto flex w-full max-w-[828px] flex-col items-center gap-20 md:gap-[234px]">
         <CaseStudyReveal>
           <div className="flex w-full max-w-[764px] flex-col items-center gap-3">
-            <h2 className={`text-center text-hwite ${typeSection}`}>
+            <h2 className={`text-center ${typeSectionOnDark}`}>
               You&rsquo;ve been here a while. Time for an espresso break
             </h2>
             <div
@@ -3010,7 +3011,7 @@ function EspressoBreakSection() {
         </CaseStudyReveal>
         <CaseStudyReveal delay={0.08}>
           <div className="flex w-full flex-col items-center gap-10 md:gap-[62px]">
-            <h2 className={`w-full text-center text-hwite ${typeSection}`}>
+            <h2 className={`w-full text-center ${typeSectionOnDark}`}>
               Oh, you&rsquo;re hangin&rsquo; around?
             </h2>
             <div className="flex w-full max-w-[540px] flex-col items-center">

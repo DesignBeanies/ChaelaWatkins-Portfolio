@@ -13,6 +13,10 @@ export const typeIntro =
 export const typeSection =
   "text-[32px] font-normal leading-[1.1] text-ink md:text-[48px]";
 
+/** Same scale as `typeSection` on ink (`bg-ink`) surfaces */
+export const typeSectionOnDark =
+  "text-[32px] font-normal leading-[1.1] text-hwite md:text-[48px]";
+
 export const typeSectionScroll =
   `${typeSection} scroll-mt-24 outline-none md:scroll-mt-28`;
 

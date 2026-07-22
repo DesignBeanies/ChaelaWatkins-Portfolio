@@ -20,6 +20,7 @@ import {
   typeMeta,
   typePill,
   typeSection,
+  typeSectionOnDark,
   typeSectionScroll,
   typeSubsection,
   typeUiLabel,
@@ -51,7 +52,8 @@ Use these for page content in `PortfolioPage.tsx`. Prefer the **lowest token tha
 |-------|--------|---------|--------|---------|---------|
 | `typeDisplay` | 64px | 96px | normal | 55px / 0.85 | Hero title only (“UX & PRODUCT DESIGNER”, uppercase) |
 | `typeIntro` | 24px | 36px | normal | tight | Hero name line (“I’m Chaela Watkins”) |
-| `typeSection` | 32px | 48px | normal | 1.1 | Major sections: “Who are you?”, “Case studies”, “What I do”, “Let’s chat IRL”, espresso headings |
+| `typeSection` | 32px | 48px | normal | 1.1 | Major sections: “Who are you?”, “Case studies”, “What I do”, “Let’s chat IRL” |
+| `typeSectionOnDark` | same as `typeSection` | same | same | same | Section headings on **`bg-ink`** surfaces (espresso break) — use instead of `typeSection` + `text-hwite` |
 | `typeSectionScroll` | same as `typeSection` | same | same | same + `scroll-mt-24 md:scroll-mt-28` | **Case study project titles** and anchored Jane H2s (`id` + `tabIndex={-1}`) |
 | `typeSubsection` | 24px | 32px | normal | 1.15 | Challenge / Solution / Design & build labels, column titles, Jane row labels, principle titles, **Before / After** |
 | `typeLead` | 18px | 24px | normal | snug | One line under a heading: hub intro, hero blurb, **case study subtitle** |
@@ -101,7 +103,7 @@ Use these for page content in `PortfolioPage.tsx`. Prefer the **lowest token tha
 | Jane — What I do | `typeSectionScroll` | `typeBody` in rows |
 | Jane — row labels | `typeSubsection` (`JaneRow`) | — |
 | Jane — principles | `typeSubsection` | `typeBody` |
-| Espresso break | `typeSection` + `text-hwite` | — |
+| Espresso break | `typeSectionOnDark` | — |
 | Contact footer | `typeSection` (“Let’s chat IRL”) | `typeBody` (blurb); Email / LinkedIn use `retroCtaClasses` + `typeCtaMd` |
 | Memory card loader | `typeUiLabel` (title bar) | `typeCardTitle` (study name), `typeMeta` (frame + wait) |
 | Lens pill | — | `typeBody` (label + menu items); chevron → `typeIconSm` |
